@@ -128,15 +128,18 @@ void LocalMapping::Run()
 
                     if(mbInertial && mpCurrentKeyFrame->GetMap()->isImuInitialized())
                     {
-                        float dist = (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm() +
-                                (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
+                        float dist =
+                                (mpCurrentKeyFrame->mPrevKF->GetCameraCenter() - mpCurrentKeyFrame->GetCameraCenter()).norm()
+                                + (mpCurrentKeyFrame->mPrevKF->mPrevKF->GetCameraCenter() -
+                                   mpCurrentKeyFrame->mPrevKF->GetCameraCenter()).norm();
 
-                        if(dist>0.05)
+                        if (dist > 0.05)
                             mTinit += mpCurrentKeyFrame->mTimeStamp - mpCurrentKeyFrame->mPrevKF->mTimeStamp;
-                        if(!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
+                        if (!mpCurrentKeyFrame->GetMap()->GetIniertialBA2())
                         {
-                            if((mTinit<10.f) && (dist<0.02))
+                            if((mTinit < 10.f) && (dist < 0.02))
                             {
+                              std::cout << "\nmTinit: " << mTinit << " dist: " << dist << std::endl;
                                 cout << "Not enough motion for initializing. Reseting..." << endl;
                                 unique_lock<mutex> lock(mMutexReset);
                                 mbResetRequestedActiveMap = true;
@@ -145,13 +148,19 @@ void LocalMapping::Run()
                             }
                         }
 
-                        bool bLarge = ((mpTracker->GetMatchesInliers()>75)&&mbMonocular)||((mpTracker->GetMatchesInliers()>100)&&!mbMonocular);
-                        Optimizer::LocalInertialBA(mpCurrentKeyFrame, &mbAbortBA, mpCurrentKeyFrame->GetMap(),num_FixedKF_BA,num_OptKF_BA,num_MPs_BA,num_edges_BA, bLarge, !mpCurrentKeyFrame->GetMap()->GetIniertialBA2());
+                        bool bLarge = ((mpTracker->GetMatchesInliers()>75) && mbMonocular) ||
+                                      ((mpTracker->GetMatchesInliers()>100) &&!mbMonocular);
+                        Optimizer::LocalInertialBA(mpCurrentKeyFrame, &mbAbortBA,
+                                mpCurrentKeyFrame->GetMap(),
+                                num_FixedKF_BA,num_OptKF_BA,num_MPs_BA,num_edges_BA, bLarge,
+                                !mpCurrentKeyFrame->GetMap()->GetIniertialBA2());
                         b_doneLBA = true;
                     }
                     else
                     {
-                        Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame,&mbAbortBA, mpCurrentKeyFrame->GetMap(),num_FixedKF_BA,num_OptKF_BA,num_MPs_BA,num_edges_BA);
+                        Optimizer::LocalBundleAdjustment(mpCurrentKeyFrame, &mbAbortBA,
+                                mpCurrentKeyFrame->GetMap(),
+                                num_FixedKF_BA,num_OptKF_BA,num_MPs_BA,num_edges_BA);
                         b_doneLBA = true;
                     }
 
@@ -958,7 +967,9 @@ void LocalMapping::KeyFrameCulling()
                 {
                     if(!mbMonocular)
                     {
-                        if(pKF->mvDepth[i]>pKF->mThDepth || pKF->mvDepth[i]<0)
+//                      if(pKF->mvDepth[i]>pKF->mThDepth || pKF->mvDepth[i]<0)
+                      if ((pKF->NLeft == -1 || i < pKF->NLeft)
+                       && (pKF->mvDepth[i] > pKF->mThDepth || pKF->mvDepth[i] < 0))
                             continue;
                     }
 
@@ -967,7 +978,8 @@ void LocalMapping::KeyFrameCulling()
                     {
                         const int &scaleLevel = (pKF -> NLeft == -1) ? pKF->mvKeysUn[i].octave
                                                                      : (i < pKF -> NLeft) ? pKF -> mvKeys[i].octave
-                                                                                          : pKF -> mvKeysRight[i].octave;
+                                                                     : pKF->mvKeysRight[i - pKF -> NLeft].octave;
+                                                                     //                    : pKF -> mvKeysRight[i].octave;
                         const map<KeyFrame*, tuple<int,int>> observations = pMP->GetObservations();
                         int nObs=0;
                         for(map<KeyFrame*, tuple<int,int>>::const_iterator mit=observations.begin(), mend=observations.end(); mit!=mend; mit++)

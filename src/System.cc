@@ -21,7 +21,9 @@
 #include "System.h"
 #include "Converter.h"
 #include <thread>
+#ifdef ENABLE_VIEWER
 #include <pangolin/pangolin.h>
+#endif
 #include <iomanip>
 #include <openssl/md5.h>
 #include <boost/serialization/base_object.hpp>
@@ -229,11 +231,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     if(bUseViewer)
     //if(false) // TODO
     {
+#ifdef ENABLE_VIEWER
         mpViewer = new Viewer(this, mpFrameDrawer,mpMapDrawer,mpTracker,strSettingsFile,settings_);
         mptViewer = new thread(&Viewer::Run, mpViewer);
         mpTracker->SetViewer(mpViewer);
         mpLoopCloser->mpViewer = mpViewer;
         mpViewer->both = mpFrameDrawer->both;
+#endif
     }
 
     // Fix verbosity
@@ -396,9 +400,27 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
     return Tcw;
 }
 
-Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
-{
+void print_fps() {
+  static int count = 0;
+  static std::chrono::high_resolution_clock::time_point last_time =
+          std::chrono::high_resolution_clock::now();
+  auto current_time = std::chrono::high_resolution_clock::now();
+  count++;
+  auto duration_ms = std::chrono::duration_cast<
+          std::chrono::milliseconds>(current_time - last_time).count();
+  if (duration_ms > 1000) {
+    int fps = std::round(count * 1000 / duration_ms);
+    std::cout << "fps: " << fps << std::endl;
+    last_time = current_time;
+    count = 0;
+  }
+}
 
+Sophus::SE3f System::TrackMonocular(const cv::Mat &im,
+        const double &timestamp,
+        const vector<IMU::Point>& vImuMeas,
+        string filename) {
+  print_fps();
     {
         unique_lock<mutex> lock(mMutexReset);
         if(mbShutDown)
@@ -407,7 +429,8 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im, const double &timestamp, 
 
     if(mSensor!=MONOCULAR && mSensor!=IMU_MONOCULAR)
     {
-        cerr << "ERROR: you called TrackMonocular but input sensor was not set to Monocular nor Monocular-Inertial." << endl;
+        cerr << "ERROR: you called TrackMonocular "
+                "but input sensor was not set to Monocular nor Monocular-Inertial." << endl;
         exit(-1);
     }
 

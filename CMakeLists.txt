@@ -7,10 +7,19 @@ ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
+option(ENABLE_VIEWER "enable render viewer" ON)
+MESSAGE("ENABLE_VIEWER: ${ENABLE_VIEWER}")
+if (ENABLE_VIEWER)
+    add_definitions(-DENABLE_VIEWER)
+    find_package(Pangolin REQUIRED)
+endif()
+
+set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/build/")
+
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -march=native")
-set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -march=native")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}   ")
+set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ")
 
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
@@ -30,7 +39,7 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV 4.4)
+find_package(OpenCV)
    if(NOT OpenCV_FOUND)
       message(FATAL_ERROR "OpenCV > 4.4 not found.")
    endif()
@@ -38,8 +47,7 @@ find_package(OpenCV 4.4)
 MESSAGE("OPENCV VERSION:")
 MESSAGE(${OpenCV_VERSION})
 
-find_package(Eigen3 3.1.0 REQUIRED)
-find_package(Pangolin REQUIRED)
+find_package(Eigen3 REQUIRED)
 find_package(realsense2)
 
 include_directories(

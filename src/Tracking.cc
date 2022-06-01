@@ -3343,8 +3343,8 @@ void Tracking::CreateNewKeyFrame()
 void Tracking::SearchLocalPoints()
 {
     // Do not search map points already matched
-    for(vector<MapPoint*>::iterator vit=mCurrentFrame.mvpMapPoints.begin(), vend=mCurrentFrame.mvpMapPoints.end(); vit!=vend; vit++)
-    {
+    for (vector<MapPoint*>::iterator vit = mCurrentFrame.mvpMapPoints.begin(),
+            vend = mCurrentFrame.mvpMapPoints.end(); vit != vend; vit++) {
         MapPoint* pMP = *vit;
         if(pMP)
         {

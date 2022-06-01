@@ -24,7 +24,11 @@
 #include "KeyFrame.h"
 
 #include <set>
+#ifdef ENABLE_VIEWER
 #include <pangolin/pangolin.h>
+#else
+typedef unsigned char GLubyte;
+#endif
 #include <mutex>
 
 #include <boost/serialization/base_object.hpp>

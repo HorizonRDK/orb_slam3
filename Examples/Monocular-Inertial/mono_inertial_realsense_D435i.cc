@@ -36,12 +36,11 @@
 
 using namespace std;
 
-bool b_continue_session;
+std::atomic_bool b_continue_session;
 
 void exit_loop_handler(int s){
     cout << "Finishing session" << endl;
     b_continue_session = false;
-
 }
 
 void interpolateData(const std::vector<double> &vBase_times,
@@ -139,7 +138,7 @@ int main(int argc, char **argv) {
             ++index;
             if (index == 1) {
                 sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-                sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,5000);
+                //  sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,5000);
                 sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0); // switch off emitter
             }
             // std::cout << "  " << index << " : " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
@@ -201,7 +200,8 @@ int main(int argc, char **argv) {
             }
 
             rs2::video_frame color_frame = fs.get_infrared_frame();
-            imCV = cv::Mat(cv::Size(width_img, height_img), CV_8U, (void*)(color_frame.get_data()), cv::Mat::AUTO_STEP);
+            imCV = cv::Mat(cv::Size(width_img, height_img), CV_8U,
+                    (void*)(color_frame.get_data()), cv::Mat::AUTO_STEP);
 
             timestamp_image = fs.get_timestamp()*1e-3;
             image_ready = true;
@@ -287,7 +287,8 @@ int main(int argc, char **argv) {
 
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_MONOCULAR, true, 0, file_name);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],
+            ORB_SLAM3::System::IMU_MONOCULAR, true, 0, file_name);
     float imageScale = SLAM.GetImageScale();
 
     double timestamp;
@@ -302,7 +303,7 @@ int main(int argc, char **argv) {
     double t_resize = 0.f;
     double t_track = 0.f;
 
-    while (!SLAM.isShutDown())
+    while (!SLAM.isShutDown() && b_continue_session)
     {
         std::vector<rs2_vector> vGyro;
         std::vector<double> vGyro_times;
@@ -329,7 +330,9 @@ int main(int argc, char **argv) {
                 int index = v_accel_timestamp_sync.size();
                 double target_time = v_gyro_timestamp[index];
 
-                rs2_vector interp_data = interpolateMeasure(target_time, current_accel_data, current_accel_timestamp, prev_accel_data, prev_accel_timestamp);
+                rs2_vector interp_data = interpolateMeasure(
+                        target_time, current_accel_data, current_accel_timestamp,
+                        prev_accel_data, prev_accel_timestamp);
 
                 v_accel_data_sync.push_back(interp_data);
                 // v_accel_data_sync.push_back(current_accel_data); // 0 interpolation
@@ -353,13 +356,14 @@ int main(int argc, char **argv) {
             image_ready = false;
         }
 
-
+        vImuMeas.reserve(vGyro.size());
         for(int i=0; i<vGyro.size(); ++i)
         {
-            ORB_SLAM3::IMU::Point lastPoint(vAccel[i].x, vAccel[i].y, vAccel[i].z,
+            ORB_SLAM3::IMU::Point lastPoint(vAccel[i].x / 9.81, vAccel[i].y / 9.81, vAccel[i].z / 9.81,
                                   vGyro[i].x, vGyro[i].y, vGyro[i].z,
                                   vGyro_times[i]);
             vImuMeas.push_back(lastPoint);
+          //  std::cout << "imu ts: " << vGyro_times[i] << std::endl;
         }
 
         if(imageScale != 1.f)
@@ -393,6 +397,7 @@ int main(int argc, char **argv) {
     #endif
 #endif
         // Pass the image to the SLAM system
+        //  std::cout << "image ts: " << timestamp << std::endl;
         SLAM.TrackMonocular(im, timestamp, vImuMeas);
 #ifdef REGISTER_TIMES
     #ifdef COMPILEDWITHC11
@@ -409,6 +414,7 @@ int main(int argc, char **argv) {
         // Clear the previous IMU measurements to load the new ones
         vImuMeas.clear();
     }
+    SLAM.Shutdown();
     cout << "System shutdown!\n";
 }
 

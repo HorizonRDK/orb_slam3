@@ -130,6 +130,7 @@ class dataset:
         imuName = self.name + "/imu0.csv"
         imuFile = open(imuName, "w")
         imuFile.write("#timestamp [ns],w_RS_S_x [rad s^-1],w_RS_S_y [rad s^-1],w_RS_S_z [rad s^-1],a_RS_S_x [m s^-2],a_RS_S_y [m s^-2],a_RS_S_z [m s^-2]\n")
+        print("imuFile: ", str(imuFile))
         for row in self.imuSync:
             i = 0
             for num in row:

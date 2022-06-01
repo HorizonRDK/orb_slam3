@@ -333,7 +333,7 @@ int main(int argc, char **argv) {
     double t_resize = 0.f;
     double t_track = 0.f;
 
-    while (!SLAM.isShutDown())
+    while (!SLAM.isShutDown() && b_continue_session)
     {
         std::vector<rs2_vector> vGyro;
         std::vector<double> vGyro_times;

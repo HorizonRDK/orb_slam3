@@ -128,7 +128,7 @@ int main(int argc, char **argv) {
             ++index;
             if (index == 1) {
                 sensor.set_option(RS2_OPTION_ENABLE_AUTO_EXPOSURE, 1);
-                sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,5000);
+               // sensor.set_option(RS2_OPTION_AUTO_EXPOSURE_LIMIT,5000);
                 sensor.set_option(RS2_OPTION_EMITTER_ENABLED, 0);
             }
             // std::cout << "  " << index << " : " << sensor.get_info(RS2_CAMERA_INFO_NAME) << std::endl;
@@ -174,7 +174,9 @@ int main(int argc, char **argv) {
         if(rs2::frameset fs = frame.as<rs2::frameset>())
         {
             rs2::video_frame color_frame = fs.get_infrared_frame();
-            imCV = cv::Mat(cv::Size(width_img, height_img), CV_8U, (void*)(color_frame.get_data()), cv::Mat::AUTO_STEP);
+
+            imCV = cv::Mat(cv::Size(color_frame.get_width(), color_frame.get_height()),
+                    CV_8U, (void*)(color_frame.get_data()), cv::Mat::AUTO_STEP);
 
             timestamp_image = fs.get_timestamp()*1e-3;
             image_ready = true;
@@ -198,7 +200,6 @@ int main(int argc, char **argv) {
             }
         }
     };
-
     rs2::pipeline_profile pipe_profile = pipe.start(cfg, imu_callback);
     rs2::stream_profile cam_stream = pipe_profile.get_stream(RS2_STREAM_INFRARED, 1);
     rs2::stream_profile imu_stream = pipe_profile.get_stream(RS2_STREAM_GYRO);
@@ -206,7 +207,15 @@ int main(int argc, char **argv) {
     rs2_intrinsics intrinsics_cam = cam_stream.as<rs2::video_stream_profile>().get_intrinsics();
     width_img = intrinsics_cam.width;
     height_img = intrinsics_cam.height;
-
+    std::cout << " fx = " << intrinsics_cam.fx << std::endl;
+    std::cout << " fy = " << intrinsics_cam.fy << std::endl;
+    std::cout << " cx = " << intrinsics_cam.ppx << std::endl;
+    std::cout << " cy = " << intrinsics_cam.ppy << std::endl;
+    std::cout << " height = " << intrinsics_cam.height << std::endl;
+    std::cout << " width = " << intrinsics_cam.width << std::endl;
+    std::cout << " Coeff = " << intrinsics_cam.coeffs[0] << ", " << intrinsics_cam.coeffs[1] << ", " <<
+    intrinsics_cam.coeffs[2] << ", " << intrinsics_cam.coeffs[3] << ", " << intrinsics_cam.coeffs[4] << ", " << std::endl;
+    std::cout << " Model = " << intrinsics_cam.model << std::endl;
     cv::Mat im;
     ofstream accFile, gyroFile, cam0TsFile;
     accFile.open (directory + "/IMU/acc.txt");
@@ -219,7 +228,9 @@ int main(int argc, char **argv) {
     v_acc_data.clear();
     v_acc_timestamp.clear();
 
+#ifdef ENABLE_VIEWER
     cv::namedWindow("cam0",cv::WINDOW_AUTOSIZE);
+#endif
 
     while (b_continue_session){
         std::vector<rs2_vector> vGyro;
@@ -252,7 +263,9 @@ int main(int argc, char **argv) {
             image_ready = false;
         }
 
+#ifdef ENABLE_VIEWER
         cv::imshow("cam0",im);
+#endif
 
         // save image and IMU data
         long int imTsInt = (long int) (1e9*imTs);
@@ -274,8 +287,15 @@ int main(int argc, char **argv) {
         for(int i=0; i<vGyro.size(); ++i){
             gyroFile << std::setprecision(15) << vGyro_times[i] << "," << vGyro[i].x << "," << vGyro[i].y << "," << vGyro[i].z << endl;
         }
-
+#ifdef ENABLE_VIEWER
         cv::waitKey(10);
+#endif
+      static unsigned int cnt = 0;
+      static unsigned int num_cnm = 9900;
+      if (++cnt >= num_cnm) {
+        b_continue_session = false;
+        std::cout << "saved " << num_cnm << " images!" << std::endl;
+      }
     }
 
     accFile.close();
