@@ -4,7 +4,7 @@ ENABLE_VIEWER=ON
 for arg in "$@"
 do
   if [ $arg == "x3" ]; then
-    AARCH_CONFIG_FILE=`realpath ../../config/aarch64_toolchainfile.cmake`
+    AARCH_CONFIG_FILE=`realpath ../../../../robot_dev_config/aarch64_toolchainfile.cmake`
     echo "aarch64_toolchainfile: ${AARCH_CONFIG_FILE}"
     TOOL_CHAIN_CMD=" -DCMAKE_TOOLCHAIN_FILE=${AARCH_CONFIG_FILE}"
     ENABLE_VIEWER=OFF
