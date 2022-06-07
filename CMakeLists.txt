@@ -14,7 +14,7 @@ if (ENABLE_VIEWER)
     find_package(Pangolin REQUIRED)
 endif()
 
-set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/build/")
+#set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/build/")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
