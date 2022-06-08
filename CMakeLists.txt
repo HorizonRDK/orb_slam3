@@ -7,7 +7,7 @@ ENDIF()
 
 MESSAGE("Build type: " ${CMAKE_BUILD_TYPE})
 
-option(ENABLE_VIEWER "enable render viewer" ON)
+option(ENABLE_VIEWER "enable render viewer" OFF)
 MESSAGE("ENABLE_VIEWER: ${ENABLE_VIEWER}")
 if (ENABLE_VIEWER)
     add_definitions(-DENABLE_VIEWER)
@@ -16,8 +16,8 @@ endif()
 
 #set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/build/")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -Wall   -O3")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall   -O3")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}  -w   -O3")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w   -O3")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE}   ")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ")
 
