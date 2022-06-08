@@ -52,13 +52,11 @@ static rs2_option get_sensor_option(const rs2::sensor& sensor) {
   // Starting from 0 until RS2_OPTION_COUNT (exclusive)
   for (int i = 0; i < static_cast<int>(RS2_OPTION_COUNT); i++) {
     rs2_option option_type = static_cast<rs2_option>(i);
-    //SDK enum types can be streamed to get a string that represents them
-    std::cout << "  " << i << ": " << option_type;
     // To control an option, use the following api:
     // First, verify that the sensor actually supports this option
     if (sensor.supports(option_type)) {
-      std::cout << std::endl;
-
+      //SDK enum types can be streamed to get a string that represents them
+      std::cout << "  " << i << ": " << option_type << std::endl;
       // Get a human readable description of the option
       const char* description = sensor.get_option_description(option_type);
       std::cout << "       Description   : " << description << std::endl;
@@ -69,7 +67,7 @@ static rs2_option get_sensor_option(const rs2::sensor& sensor) {
 
       //To change the value of an option, please follow the change_sensor_option() function
     } else {
-        std::cout << " is not supported" << std::endl;
+      //  std::cout << " is not supported" << std::endl;
     }
   }
 
@@ -259,7 +257,11 @@ int main(int argc, char **argv) {
             cond_image_rec.wait(lk);
       }
       std::lock_guard<std::mutex> lk(imu_mutex);
-
+      static int recv_cnt = 0;
+      if (++recv_cnt >= 33) {
+        recv_cnt = 0;
+        std::cout << "saving.." << std::endl;
+      }
       // Copy the IMU data to local single thread variables
       vGyro = v_gyro_data;
       vGyro_times = v_gyro_timestamp;
