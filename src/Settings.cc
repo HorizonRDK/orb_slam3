@@ -307,8 +307,7 @@ namespace ORB_SLAM3 {
                 vPinHoleDistorsion2_[2] = readParameter<float>(fSettings,"Camera2.p1",found);
                 vPinHoleDistorsion2_[3] = readParameter<float>(fSettings,"Camera2.p2",found);
             }
-        }
-        else if(cameraType_ == KannalaBrandt){
+        } else if(cameraType_ == KannalaBrandt){
             //Read intrinsic parameters
             float fx = readParameter<float>(fSettings,"Camera2.fx",found);
             float fy = readParameter<float>(fSettings,"Camera2.fy",found);
@@ -331,14 +330,18 @@ namespace ORB_SLAM3 {
             vector<int> vOverlapping = {colBegin, colEnd};
 
             static_cast<KannalaBrandt8*>(calibration2_)->mvLappingArea = vOverlapping;
+        } else if (cameraType_ == Rectified) {
+          calibration2_ = new Pinhole();
+          originalCalib2_ = new Pinhole();
+          *calibration2_ = *calibration1_;
+          *originalCalib2_ = *originalCalib1_;
         }
 
         //Load stereo extrinsic calibration
         if(cameraType_ == Rectified){
             b_ = readParameter<float>(fSettings,"Stereo.b",found);
             bf_ = b_ * calibration1_->getParameter(0);
-        }
-        else{
+        } else{
             cv::Mat cvTlr = readParameter<cv::Mat>(fSettings,"Stereo.T_c1_c2",found);
             Tlr_ = Converter::toSophus(cvTlr);
 
@@ -349,8 +352,6 @@ namespace ORB_SLAM3 {
         }
 
         thDepth_ = readParameter<float>(fSettings,"Stereo.ThDepth",found);
-
-
     }
 
     void Settings::readImageInfo(cv::FileStorage &fSettings) {
@@ -477,9 +478,11 @@ namespace ORB_SLAM3 {
     }
 
     void Settings::readOtherParameters(cv::FileStorage& fSettings) {
-        bool found;
+      bool found;
 
-        thFarPoints_ = readParameter<float>(fSettings,"System.thFarPoints",found,false);
+      thFarPoints_ = readParameter<float>(fSettings,"System.thFarPoints",found,false);
+      extractor_tpye_ = readParameter<std::string>(
+              fSettings, "ORBextractor.type", found, false);
     }
 
     void Settings::precomputeRectificationMaps() {
@@ -632,7 +635,7 @@ namespace ORB_SLAM3 {
         output << "\t-ORB number of scales: " << settings.nLevels_ << endl;
         output << "\t-Initial FAST threshold: " << settings.initThFAST_ << endl;
         output << "\t-Min FAST threshold: " << settings.minThFAST_ << endl;
-
+        output << "\t-Extractor type: " << settings.extractor_tpye_ << endl;
         return output;
     }
 };

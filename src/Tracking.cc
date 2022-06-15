@@ -28,12 +28,9 @@
 #include "KannalaBrandt8.h"
 #include "MLPnPsolver.h"
 #include "GeometricTools.h"
-
 #include <iostream>
-
 #include <mutex>
 #include <chrono>
-
 
 using namespace std;
 
@@ -533,87 +530,104 @@ Tracking::~Tracking()
 }
 
 void Tracking::newParameterLoader(Settings *settings) {
-    mpCamera = settings->camera1();
-    mpCamera = mpAtlas->AddCamera(mpCamera);
+  mpCamera = settings->camera1();
+  mpCamera = mpAtlas->AddCamera(mpCamera);
 
-    if(settings->needToUndistort()){
-        mDistCoef = settings->camera1DistortionCoef();
-    }
-    else{
-        mDistCoef = cv::Mat::zeros(4,1,CV_32F);
-    }
+  if(settings->needToUndistort()){
+      mDistCoef = settings->camera1DistortionCoef();
+  }
+  else{
+      mDistCoef = cv::Mat::zeros(4,1,CV_32F);
+  }
 
-    //TODO: missing image scaling and rectification
-    mImageScale = 1.0f;
+  //TODO: missing image scaling and rectification
+  mImageScale = 1.0f;
 
-    mK = cv::Mat::eye(3,3,CV_32F);
-    mK.at<float>(0,0) = mpCamera->getParameter(0);
-    mK.at<float>(1,1) = mpCamera->getParameter(1);
-    mK.at<float>(0,2) = mpCamera->getParameter(2);
-    mK.at<float>(1,2) = mpCamera->getParameter(3);
+  mK = cv::Mat::eye(3,3,CV_32F);
+  mK.at<float>(0,0) = mpCamera->getParameter(0);
+  mK.at<float>(1,1) = mpCamera->getParameter(1);
+  mK.at<float>(0,2) = mpCamera->getParameter(2);
+  mK.at<float>(1,2) = mpCamera->getParameter(3);
 
-    mK_.setIdentity();
-    mK_(0,0) = mpCamera->getParameter(0);
-    mK_(1,1) = mpCamera->getParameter(1);
-    mK_(0,2) = mpCamera->getParameter(2);
-    mK_(1,2) = mpCamera->getParameter(3);
+  mK_.setIdentity();
+  mK_(0,0) = mpCamera->getParameter(0);
+  mK_(1,1) = mpCamera->getParameter(1);
+  mK_(0,2) = mpCamera->getParameter(2);
+  mK_(1,2) = mpCamera->getParameter(3);
 
-    if((mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD) &&
-        settings->cameraType() == Settings::KannalaBrandt){
-        mpCamera2 = settings->camera2();
-        mpCamera2 = mpAtlas->AddCamera(mpCamera2);
+  if((mSensor==System::STEREO || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD) &&
+      settings->cameraType() == Settings::KannalaBrandt){
+      mpCamera2 = settings->camera2();
+      mpCamera2 = mpAtlas->AddCamera(mpCamera2);
 
-        mTlr = settings->Tlr();
+      mTlr = settings->Tlr();
 
-        mpFrameDrawer->both = true;
-    }
+      mpFrameDrawer->both = true;
+  }
 
-    if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD ){
-        mbf = settings->bf();
-        mThDepth = settings->b() * settings->thDepth();
-    }
+  if(mSensor==System::STEREO || mSensor==System::RGBD || mSensor==System::IMU_STEREO || mSensor==System::IMU_RGBD ){
+      mbf = settings->bf();
+      mThDepth = settings->b() * settings->thDepth();
+  }
 
-    if(mSensor==System::RGBD || mSensor==System::IMU_RGBD){
-        mDepthMapFactor = settings->depthMapFactor();
-        if(fabs(mDepthMapFactor)<1e-5)
-            mDepthMapFactor=1;
-        else
-            mDepthMapFactor = 1.0f/mDepthMapFactor;
-    }
+  if(mSensor==System::RGBD || mSensor==System::IMU_RGBD){
+      mDepthMapFactor = settings->depthMapFactor();
+      if(fabs(mDepthMapFactor)<1e-5)
+          mDepthMapFactor=1;
+      else
+          mDepthMapFactor = 1.0f/mDepthMapFactor;
+  }
 
-    mMinFrames = 0;
-    mMaxFrames = settings->fps();
-    mbRGB = settings->rgb();
+  mMinFrames = 0;
+  mMaxFrames = settings->fps();
+  mbRGB = settings->rgb();
 
-    //ORB parameters
-    int nFeatures = settings->nFeatures();
-    int nLevels = settings->nLevels();
-    int fIniThFAST = settings->initThFAST();
-    int fMinThFAST = settings->minThFAST();
-    float fScaleFactor = settings->scaleFactor();
+  //ORB parameters
+  int nFeatures = settings->nFeatures();
+  int nLevels = settings->nLevels();
+  int fIniThFAST = settings->initThFAST();
+  int fMinThFAST = settings->minThFAST();
+  float fScaleFactor = settings->scaleFactor();
 
-    mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+  ORBextractor::EXTRACTOR_TYPE extractorType =
+                  ORBextractor::EXTRACTOR_TYPE::ORB;
 
-    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
-        mpORBextractorRight = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+  auto extractor_tpye = settings->extractor_tpye();
+  if (extractor_tpye == "GCNv2") {
+    extractorType = ORBextractor::EXTRACTOR_TYPE::GCNv2;
+  } else if (extractor_tpye == "SUPERPOINT") {
+    extractorType = ORBextractor::EXTRACTOR_TYPE::SUPERPOINT;
+  }
 
-    if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
-        mpIniORBextractor = new ORBextractor(5*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+  mpORBextractorLeft = ORBextractor::make_extractor(
+          nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST,
+          extractorType);
 
-    //IMU parameters
-    Sophus::SE3f Tbc = settings->Tbc();
-    mInsertKFsLost = settings->insertKFsWhenLost();
-    mImuFreq = settings->imuFrequency();
-    mImuPer = 0.001; //1.0 / (double) mImuFreq;     //TODO: ESTO ESTA BIEN?
-    float Ng = settings->noiseGyro();
-    float Na = settings->noiseAcc();
-    float Ngw = settings->gyroWalk();
-    float Naw = settings->accWalk();
+  if (mSensor == System::STEREO || mSensor == System::IMU_STEREO) {
+    mpORBextractorRight = ORBextractor::make_extractor(
+            nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST,
+            extractorType);
+  }
 
-    const float sf = sqrt(mImuFreq);
-    mpImuCalib = new IMU::Calib(Tbc,Ng*sf,Na*sf,Ngw/sf,Naw/sf);
+  if (mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR) {
+    mpIniORBextractor = ORBextractor::make_extractor(5 * nFeatures,
+            fScaleFactor, nLevels, fIniThFAST, fMinThFAST, extractorType);
+  }
 
-    mpImuPreintegratedFromLastKF = new IMU::Preintegrated(IMU::Bias(),*mpImuCalib);
+  //IMU parameters
+  Sophus::SE3f Tbc = settings->Tbc();
+  mInsertKFsLost = settings->insertKFsWhenLost();
+  mImuFreq = settings->imuFrequency();
+  mImuPer = 0.001; //1.0 / (double) mImuFreq;     //TODO: ESTO ESTA BIEN?
+  float Ng = settings->noiseGyro();
+  float Na = settings->noiseAcc();
+  float Ngw = settings->gyroWalk();
+  float Naw = settings->accWalk();
+
+  const float sf = sqrt(mImuFreq);
+  mpImuCalib = new IMU::Calib(Tbc,Ng*sf,Na*sf,Ngw/sf,Naw/sf);
+
+  mpImuPreintegratedFromLastKF = new IMU::Preintegrated(IMU::Bias(),*mpImuCalib);
 }
 
 bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
@@ -1214,88 +1228,82 @@ bool Tracking::ParseCamParamFile(cv::FileStorage &fSettings)
     return true;
 }
 
-bool Tracking::ParseORBParamFile(cv::FileStorage &fSettings)
-{
-    bool b_miss_params = false;
-    int nFeatures, nLevels, fIniThFAST, fMinThFAST;
-    float fScaleFactor;
+bool Tracking::ParseORBParamFile(cv::FileStorage &fSettings) {
+  bool b_miss_params = false;
+  int nFeatures, nLevels, fIniThFAST, fMinThFAST;
+  float fScaleFactor;
 
-    cv::FileNode node = fSettings["ORBextractor.nFeatures"];
-    if(!node.empty() && node.isInt())
-    {
-        nFeatures = node.operator int();
-    }
-    else
-    {
-        std::cerr << "*ORBextractor.nFeatures parameter doesn't exist or is not an integer*" << std::endl;
-        b_miss_params = true;
-    }
+  cv::FileNode node = fSettings["ORBextractor.nFeatures"];
+  if(!node.empty() && node.isInt()) {
+    nFeatures = node.operator int();
+  } else {
+    std::cerr << "*ORBextractor.nFeatures parameter doesn't exist or is not an integer*" << std::endl;
+    b_miss_params = true;
+  }
 
-    node = fSettings["ORBextractor.scaleFactor"];
-    if(!node.empty() && node.isReal())
-    {
-        fScaleFactor = node.real();
-    }
-    else
-    {
-        std::cerr << "*ORBextractor.scaleFactor parameter doesn't exist or is not a real number*" << std::endl;
-        b_miss_params = true;
-    }
+  node = fSettings["ORBextractor.scaleFactor"];
+  if(!node.empty() && node.isReal()) {
+    fScaleFactor = node.real();
+  } else {
+    std::cerr << "*ORBextractor.scaleFactor parameter doesn't exist or is not a real number*" << std::endl;
+    b_miss_params = true;
+  }
 
-    node = fSettings["ORBextractor.nLevels"];
-    if(!node.empty() && node.isInt())
-    {
-        nLevels = node.operator int();
-    }
-    else
-    {
-        std::cerr << "*ORBextractor.nLevels parameter doesn't exist or is not an integer*" << std::endl;
-        b_miss_params = true;
-    }
+  node = fSettings["ORBextractor.nLevels"];
+  if(!node.empty() && node.isInt()) {
+    nLevels = node.operator int();
+  } else {
+    std::cerr << "*ORBextractor.nLevels parameter doesn't exist or is not an integer*" << std::endl;
+    b_miss_params = true;
+  }
 
-    node = fSettings["ORBextractor.iniThFAST"];
-    if(!node.empty() && node.isInt())
-    {
-        fIniThFAST = node.operator int();
-    }
-    else
-    {
-        std::cerr << "*ORBextractor.iniThFAST parameter doesn't exist or is not an integer*" << std::endl;
-        b_miss_params = true;
-    }
+  node = fSettings["ORBextractor.iniThFAST"];
+  if(!node.empty() && node.isInt()) {
+    fIniThFAST = node.operator int();
+  } else {
+    std::cerr << "*ORBextractor.iniThFAST parameter doesn't exist or is not an integer*" << std::endl;
+    b_miss_params = true;
+  }
 
-    node = fSettings["ORBextractor.minThFAST"];
-    if(!node.empty() && node.isInt())
-    {
-        fMinThFAST = node.operator int();
-    }
-    else
-    {
-        std::cerr << "*ORBextractor.minThFAST parameter doesn't exist or is not an integer*" << std::endl;
-        b_miss_params = true;
-    }
+  node = fSettings["ORBextractor.minThFAST"];
+  if(!node.empty() && node.isInt()) {
+    fMinThFAST = node.operator int();
+  } else {
+    std::cerr << "*ORBextractor.minThFAST parameter doesn't exist or is not an integer*" << std::endl;
+    b_miss_params = true;
+  }
 
-    if(b_miss_params)
-    {
-        return false;
-    }
+  if (b_miss_params) {
+    return false;
+  }
 
-    mpORBextractorLeft = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+  ORBextractor::EXTRACTOR_TYPE extractorType =
+          ORBextractor::EXTRACTOR_TYPE::GCNv2;
 
-    if(mSensor==System::STEREO || mSensor==System::IMU_STEREO)
-        mpORBextractorRight = new ORBextractor(nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+  mpORBextractorLeft = ORBextractor::make_extractor(
+          nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST,
+          extractorType);
 
-    if(mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR)
-        mpIniORBextractor = new ORBextractor(5*nFeatures,fScaleFactor,nLevels,fIniThFAST,fMinThFAST);
+  if (mSensor == System::STEREO || mSensor == System::IMU_STEREO) {
+    mpORBextractorRight = ORBextractor::make_extractor(
+            nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST,
+            extractorType);
+  }
 
-    cout << endl << "ORB Extractor Parameters: " << endl;
-    cout << "- Number of Features: " << nFeatures << endl;
-    cout << "- Scale Levels: " << nLevels << endl;
-    cout << "- Scale Factor: " << fScaleFactor << endl;
-    cout << "- Initial Fast Threshold: " << fIniThFAST << endl;
-    cout << "- Minimum Fast Threshold: " << fMinThFAST << endl;
+  if (mSensor==System::MONOCULAR || mSensor==System::IMU_MONOCULAR) {
+    mpIniORBextractor = ORBextractor::make_extractor(
+            5 * nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST,
+            extractorType);
+  }
 
-    return true;
+  cout << endl << "ORB Extractor Parameters: " << endl;
+  cout << "- Number of Features: " << nFeatures << endl;
+  cout << "- Scale Levels: " << nLevels << endl;
+  cout << "- Scale Factor: " << fScaleFactor << endl;
+  cout << "- Initial Fast Threshold: " << fIniThFAST << endl;
+  cout << "- Minimum Fast Threshold: " << fMinThFAST << endl;
+
+  return true;
 }
 
 bool Tracking::ParseIMUParamFile(cv::FileStorage &fSettings)
@@ -1949,7 +1957,7 @@ void Tracking::Track()
                 }
                 else
                 {
-                    Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
+                    //  Verbose::PrintMess("TRACK: Track with motion model", Verbose::VERBOSITY_DEBUG);
                     bOK = TrackWithMotionModel();
                     if(!bOK)
                         bOK = TrackReferenceKeyFrame();
@@ -2724,14 +2732,15 @@ bool Tracking::TrackReferenceKeyFrame()
 
     // We perform first an ORB matching with the reference keyframe
     // If enough matches are found we setup a PnP solver
-    ORBmatcher matcher(0.7,true);
+    ORBmatcher matcher(0.4,true);
     vector<MapPoint*> vpMapPointMatches;
 
     int nmatches = matcher.SearchByBoW(mpReferenceKF,mCurrentFrame,vpMapPointMatches);
-
-    if(nmatches<15)
+    static int matches_th = 5;
+    if(nmatches < matches_th)
     {
-        cout << "TRACK_REF_KF: Less than 15 matches!!\n";
+        cout << "TRACK_REF_KF: " << nmatches
+             << " Less than " << matches_th << " matches!! \n";
         return false;
     }
 

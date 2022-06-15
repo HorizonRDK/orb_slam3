@@ -69,7 +69,7 @@ cd ${FILE_PATH}
 mkdir -p build
 cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_VIEWER=${ENABLE_VIEWER} ${TOOL_CHAIN_CMD}
-make -j4
+make -j2
 
 clean_Thirdparty
 uncompress_vocabulary

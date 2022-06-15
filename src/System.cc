@@ -117,7 +117,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
         mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        bool bVocLoad;
+        string postfix = strVocFile.substr(strVocFile.find_last_of('.') + 1);
+        if (postfix == "txt") {
+          bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        } else {
+          bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+        }
         if(!bVocLoad)
         {
             cerr << "Wrong path to vocabulary. " << endl;
@@ -139,7 +145,13 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         cout << endl << "Loading ORB Vocabulary. This could take a while..." << endl;
 
         mpVocabulary = new ORBVocabulary();
-        bool bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        bool bVocLoad;
+        string postfix = strVocFile.substr(strVocFile.find_last_of('.') + 1);
+        if (postfix == "txt") {
+          bVocLoad = mpVocabulary->loadFromTextFile(strVocFile);
+        } else {
+          bVocLoad = mpVocabulary->loadFromBinaryFile(strVocFile);
+        }
         if(!bVocLoad)
         {
             cerr << "Wrong path to vocabulary. " << endl;
@@ -241,7 +253,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     }
 
     // Fix verbosity
-    Verbose::SetTh(Verbose::VERBOSITY_QUIET);
+    Verbose::SetTh(Verbose::VERBOSITY_DEBUG);
 
 }
 

@@ -41,7 +41,6 @@ bool b_continue_session;
 void exit_loop_handler(int s){
     cout << "Finishing session" << endl;
     b_continue_session = false;
-
 }
 
 rs2_vector interpolateMeasure(const double target_time,
@@ -94,7 +93,9 @@ int main(int argc, char **argv) {
 
     if (argc < 3 || argc > 4) {
         cerr << endl
-             << "Usage: ./stereo_realsense_D435i path_to_vocabulary path_to_settings (trajectory_file_name)"
+             << "Usage: ./stereo_realsense_D435i"
+                " path_to_vocabulary path_to_settings"
+                " (trajectory_file_name)"
              << endl;
         return 1;
     }
@@ -150,8 +151,10 @@ int main(int argc, char **argv) {
     rs2::pipeline pipe;
     // Create a configuration for configuring the pipeline with a non default profile
     rs2::config cfg;
-    cfg.enable_stream(RS2_STREAM_INFRARED, 1, 640, 480, RS2_FORMAT_Y8, 30);
-    cfg.enable_stream(RS2_STREAM_INFRARED, 2, 640, 480, RS2_FORMAT_Y8, 30);
+    cfg.enable_stream(RS2_STREAM_INFRARED,
+            1, 640, 480, RS2_FORMAT_Y8, 15);
+    cfg.enable_stream(RS2_STREAM_INFRARED,
+            2, 640, 480, RS2_FORMAT_Y8, 15);
 
     // IMU callback
     std::mutex imu_mutex;
@@ -247,77 +250,75 @@ int main(int argc, char **argv) {
     double t_resize = 0.f;
     double t_track = 0.f;
 
-    while (!SLAM.isShutDown() && b_continue_session)
-    {
-        std::vector<rs2_vector> vGyro;
-        std::vector<double> vGyro_times;
-        std::vector<rs2_vector> vAccel;
-        std::vector<double> vAccel_times;
+    while (!SLAM.isShutDown() && b_continue_session) {
+      std::vector<rs2_vector> vGyro;
+      std::vector<double> vGyro_times;
+      std::vector<rs2_vector> vAccel;
+      std::vector<double> vAccel_times;
 
-        {
-            std::unique_lock<std::mutex> lk(imu_mutex);
-            if(!image_ready)
-                cond_image_rec.wait(lk);
+      {
+        std::unique_lock<std::mutex> lk(imu_mutex);
+        if(!image_ready)
+            cond_image_rec.wait(lk);
 
 #ifdef COMPILEDWITHC11
-            std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
+        std::chrono::steady_clock::time_point time_Start_Process = std::chrono::steady_clock::now();
 #else
-            std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
+        std::chrono::monotonic_clock::time_point time_Start_Process = std::chrono::monotonic_clock::now();
 #endif
 
-            if(count_im_buffer>1)
-                cout << count_im_buffer -1 << " dropped frs\n";
-            count_im_buffer = 0;
+        if(count_im_buffer>1)
+            cout << count_im_buffer -1 << " dropped frs\n";
+        count_im_buffer = 0;
 
-            timestamp = timestamp_image;
-            im = imCV.clone();
-            imRight = imRightCV.clone();
+        timestamp = timestamp_image;
+        im = imCV.clone();
+        imRight = imRightCV.clone();
 
-            image_ready = false;
-        }
+        image_ready = false;
+      }
 
-        if(imageScale != 1.f)
-        {
+      if(imageScale != 1.f) {
 #ifdef REGISTER_TIMES
-    #ifdef COMPILEDWITHC11
-            std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
-    #else
-            std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
-    #endif
+  #ifdef COMPILEDWITHC11
+          std::chrono::steady_clock::time_point t_Start_Resize = std::chrono::steady_clock::now();
+  #else
+          std::chrono::monotonic_clock::time_point t_Start_Resize = std::chrono::monotonic_clock::now();
+  #endif
 #endif
-            int width = im.cols * imageScale;
-            int height = im.rows * imageScale;
-            cv::resize(im, im, cv::Size(width, height));
-            cv::resize(imRight, imRight, cv::Size(width, height));
+        int width = im.cols * imageScale;
+        int height = im.rows * imageScale;
+        cv::resize(im, im, cv::Size(width, height));
+        cv::resize(imRight, imRight, cv::Size(width, height));
 
 #ifdef REGISTER_TIMES
-    #ifdef COMPILEDWITHC11
-            std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
-    #else
-            std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
-    #endif
-            t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
-            SLAM.InsertResizeTime(t_resize);
+  #ifdef COMPILEDWITHC11
+          std::chrono::steady_clock::time_point t_End_Resize = std::chrono::steady_clock::now();
+  #else
+          std::chrono::monotonic_clock::time_point t_End_Resize = std::chrono::monotonic_clock::now();
+  #endif
+          t_resize = std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Resize - t_Start_Resize).count();
+          SLAM.InsertResizeTime(t_resize);
 #endif
-        }
+      }
 
 #ifdef REGISTER_TIMES
-    #ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
-    #else
-        std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
-    #endif
+  #ifdef COMPILEDWITHC11
+      std::chrono::steady_clock::time_point t_Start_Track = std::chrono::steady_clock::now();
+  #else
+      std::chrono::monotonic_clock::time_point t_Start_Track = std::chrono::monotonic_clock::now();
+  #endif
 #endif
-        // Stereo images are already rectified.
-        SLAM.TrackStereo(im, imRight, timestamp);
+      // Stereo images are already rectified.
+      SLAM.TrackStereo(im, imRight, timestamp);
 #ifdef REGISTER_TIMES
-    #ifdef COMPILEDWITHC11
-        std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
-    #else
-        std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
-    #endif
-        t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
-        SLAM.InsertTrackTime(t_track);
+  #ifdef COMPILEDWITHC11
+      std::chrono::steady_clock::time_point t_End_Track = std::chrono::steady_clock::now();
+  #else
+      std::chrono::monotonic_clock::time_point t_End_Track = std::chrono::monotonic_clock::now();
+  #endif
+      t_track = t_resize + std::chrono::duration_cast<std::chrono::duration<double,std::milli> >(t_End_Track - t_Start_Track).count();
+      SLAM.InsertTrackTime(t_track);
 #endif
     }
     cout << "System shutdown!\n";

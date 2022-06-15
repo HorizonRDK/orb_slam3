@@ -228,12 +228,12 @@ namespace ORB_SLAM3
 
         const DBoW2::FeatureVector &vFeatVecKF = pKF->mFeatVec;
 
-        int nmatches=0;
+        int nmatches = 0;
 
         vector<int> rotHist[HISTO_LENGTH];
-        for(int i=0;i<HISTO_LENGTH;i++)
+        for(int i = 0; i < HISTO_LENGTH; i++)
             rotHist[i].reserve(500);
-        const float factor = 1.0f/HISTO_LENGTH;
+        const float factor = 1.0f / HISTO_LENGTH;
 
         // We perform the matching over ORB that belong to the same vocabulary node (at a certain level)
         DBoW2::FeatureVector::const_iterator KFit = vFeatVecKF.begin();
@@ -241,15 +241,12 @@ namespace ORB_SLAM3
         DBoW2::FeatureVector::const_iterator KFend = vFeatVecKF.end();
         DBoW2::FeatureVector::const_iterator Fend = F.mFeatVec.end();
 
-        while(KFit != KFend && Fit != Fend)
-        {
-            if(KFit->first == Fit->first)
-            {
+        while (KFit != KFend && Fit != Fend) {
+          if(KFit->first == Fit->first) {
                 const vector<unsigned int> vIndicesKF = KFit->second;
                 const vector<unsigned int> vIndicesF = Fit->second;
 
-                for(size_t iKF=0; iKF<vIndicesKF.size(); iKF++)
-                {
+                for (size_t iKF=0; iKF<vIndicesKF.size(); iKF++) {
                     const unsigned int realIdxKF = vIndicesKF[iKF];
 
                     MapPoint* pMP = vpMapPointsKF[realIdxKF];
@@ -270,30 +267,25 @@ namespace ORB_SLAM3
                     int bestIdxFR =-1 ;
                     int bestDist2R=256;
 
-                    for(size_t iF=0; iF<vIndicesF.size(); iF++)
-                    {
+                    for(size_t iF=0; iF<vIndicesF.size(); iF++) {
                         if(F.Nleft == -1){
-                            const unsigned int realIdxF = vIndicesF[iF];
+                          const unsigned int realIdxF = vIndicesF[iF];
 
-                            if(vpMapPointMatches[realIdxF])
-                                continue;
+                          if(vpMapPointMatches[realIdxF])
+                              continue;
 
-                            const cv::Mat &dF = F.mDescriptors.row(realIdxF);
+                          const cv::Mat &dF = F.mDescriptors.row(realIdxF);
 
-                            const int dist =  DescriptorDistance(dKF,dF);
+                          const int dist =  DescriptorDistance(dKF,dF);
 
-                            if(dist<bestDist1)
-                            {
-                                bestDist2=bestDist1;
-                                bestDist1=dist;
-                                bestIdxF=realIdxF;
-                            }
-                            else if(dist<bestDist2)
-                            {
-                                bestDist2=dist;
-                            }
-                        }
-                        else{
+                          if (dist < bestDist1) {
+                            bestDist2 = bestDist1;
+                            bestDist1 = dist;
+                            bestIdxF = realIdxF;
+                          } else if ( dist < bestDist2) {
+                            bestDist2 = dist;
+                          }
+                        } else {
                             const unsigned int realIdxF = vIndicesF[iF];
 
                             if(vpMapPointMatches[realIdxF])
@@ -324,68 +316,57 @@ namespace ORB_SLAM3
 
                     }
 
-                    if(bestDist1<=TH_LOW)
-                    {
-                        if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2))
-                        {
-                            vpMapPointMatches[bestIdxF]=pMP;
+                    if(bestDist1 <= TH_LOW) {
+                      if(static_cast<float>(bestDist1)<mfNNratio*static_cast<float>(bestDist2)) {
+                          vpMapPointMatches[bestIdxF] = pMP;
+                          const cv::KeyPoint &kp =
+                                  (!pKF->mpCamera2) ? pKF->mvKeysUn[realIdxKF] :
+                                  (realIdxKF >= pKF -> NLeft) ? pKF -> mvKeysRight[realIdxKF - pKF -> NLeft]
+                                                              : pKF -> mvKeys[realIdxKF];
+                          if (mbCheckOrientation) {
+                            cv::KeyPoint &Fkp =
+                                    (!pKF->mpCamera2 || F.Nleft == -1) ? F.mvKeys[bestIdxF] :
+                                    (bestIdxF >= F.Nleft) ? F.mvKeysRight[bestIdxF - F.Nleft]
+                                                          : F.mvKeys[bestIdxF];
 
+                            float rot = kp.angle-Fkp.angle;
+                            if(rot < 0.0)
+                                rot += 360.0f;
+                            int bin = round(rot*factor);
+                            if(bin == HISTO_LENGTH)
+                                bin = 0;
+                            assert(bin >= 0 && bin < HISTO_LENGTH);
+                            rotHist[bin].push_back(bestIdxF);
+                          }
+                          nmatches++;
+                        }
+
+                        if (bestDist1R <= TH_LOW) {
+                          if (static_cast<float>(bestDist1R) < mfNNratio * static_cast<float>(bestDist2R) || true) {
+                            vpMapPointMatches[bestIdxFR]=pMP;
                             const cv::KeyPoint &kp =
                                     (!pKF->mpCamera2) ? pKF->mvKeysUn[realIdxKF] :
                                     (realIdxKF >= pKF -> NLeft) ? pKF -> mvKeysRight[realIdxKF - pKF -> NLeft]
                                                                 : pKF -> mvKeys[realIdxKF];
+                            if (mbCheckOrientation) {
+                              cv::KeyPoint &Fkp =
+                                      (!F.mpCamera2) ? F.mvKeys[bestIdxFR] :
+                                      (bestIdxFR >= F.Nleft) ? F.mvKeysRight[bestIdxFR - F.Nleft]
+                                                             : F.mvKeys[bestIdxFR];
 
-                            if(mbCheckOrientation)
-                            {
-                                cv::KeyPoint &Fkp =
-                                        (!pKF->mpCamera2 || F.Nleft == -1) ? F.mvKeys[bestIdxF] :
-                                        (bestIdxF >= F.Nleft) ? F.mvKeysRight[bestIdxF - F.Nleft]
-                                                              : F.mvKeys[bestIdxF];
-
-                                float rot = kp.angle-Fkp.angle;
-                                if(rot<0.0)
-                                    rot+=360.0f;
-                                int bin = round(rot*factor);
-                                if(bin==HISTO_LENGTH)
-                                    bin=0;
-                                assert(bin>=0 && bin<HISTO_LENGTH);
-                                rotHist[bin].push_back(bestIdxF);
+                              float rot = kp.angle-Fkp.angle;
+                              if (rot < 0.0)
+                                  rot += 360.0f;
+                              int bin = round(rot * factor);
+                              if (bin == HISTO_LENGTH)
+                                  bin=0;
+                              assert(bin >= 0 && bin < HISTO_LENGTH);
+                              rotHist[bin].push_back(bestIdxFR);
                             }
                             nmatches++;
-                        }
-
-                        if(bestDist1R<=TH_LOW)
-                        {
-                            if(static_cast<float>(bestDist1R)<mfNNratio*static_cast<float>(bestDist2R) || true)
-                            {
-                                vpMapPointMatches[bestIdxFR]=pMP;
-
-                                const cv::KeyPoint &kp =
-                                        (!pKF->mpCamera2) ? pKF->mvKeysUn[realIdxKF] :
-                                        (realIdxKF >= pKF -> NLeft) ? pKF -> mvKeysRight[realIdxKF - pKF -> NLeft]
-                                                                    : pKF -> mvKeys[realIdxKF];
-
-                                if(mbCheckOrientation)
-                                {
-                                    cv::KeyPoint &Fkp =
-                                            (!F.mpCamera2) ? F.mvKeys[bestIdxFR] :
-                                            (bestIdxFR >= F.Nleft) ? F.mvKeysRight[bestIdxFR - F.Nleft]
-                                                                   : F.mvKeys[bestIdxFR];
-
-                                    float rot = kp.angle-Fkp.angle;
-                                    if(rot<0.0)
-                                        rot+=360.0f;
-                                    int bin = round(rot*factor);
-                                    if(bin==HISTO_LENGTH)
-                                        bin=0;
-                                    assert(bin>=0 && bin<HISTO_LENGTH);
-                                    rotHist[bin].push_back(bestIdxFR);
-                                }
-                                nmatches++;
-                            }
+                          }
                         }
                     }
-
                 }
 
                 KFit++;

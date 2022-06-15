@@ -40,29 +40,41 @@ public:
     bool bNoMore;
 };
 
-class ORBextractor
-{
+class ORBextractor {
 public:
-    
-    enum {HARRIS_SCORE=0, FAST_SCORE=1 };
+    enum EXTRACTOR_TYPE {
+        ORB = 0,
+        GCNv2,
+        SUPERPOINT
+    };
+    static ORBextractor* make_extractor(
+            int nfeatures, float scaleFactor, int nlevels,
+            int iniThFAST, int minThFAST, EXTRACTOR_TYPE extractorType);
+
+    enum {
+      HARRIS_SCORE = 0,
+      FAST_SCORE = 1
+    };
 
     ORBextractor(int nfeatures, float scaleFactor, int nlevels,
                  int iniThFAST, int minThFAST);
 
-    ~ORBextractor(){}
+    virtual ~ORBextractor(){}
 
     // Compute the ORB features and descriptors on an image.
     // ORB are dispersed on the image using an octree.
     // Mask is ignored in the current implementation.
-    int operator()( cv::InputArray _image, cv::InputArray _mask,
+    virtual int operator()( cv::InputArray _image, cv::InputArray _mask,
                     std::vector<cv::KeyPoint>& _keypoints,
                     cv::OutputArray _descriptors, std::vector<int> &vLappingArea);
 
     int inline GetLevels(){
-        return nlevels;}
+        return nlevels;
+    }
 
     float inline GetScaleFactor(){
-        return scaleFactor;}
+        return scaleFactor;
+    }
 
     std::vector<float> inline GetScaleFactors(){
         return mvScaleFactor;

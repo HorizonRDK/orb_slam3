@@ -16,8 +16,8 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <signal.h>
-#include <stdlib.h>
+#include <csignal>
+#include <cstdlib>
 #include <iostream>
 #include <algorithm>
 #include <fstream>
@@ -25,6 +25,8 @@
 #include <ctime>
 #include <sstream>
 #include <iomanip>
+#include <deque>
+#include <thread>
 
 #include <condition_variable>
 
@@ -36,8 +38,13 @@
 
 using namespace std;
 
-bool b_continue_session;
+bool b_continue_session = true;
 bool b_stereo_mode = false;
+int fps = 15;
+
+using image_deque = std::deque<std::pair<double, cv::Mat>>;
+image_deque image_left_queue;
+image_deque image_right_queue;
 
 void exit_loop_handler(int s){
   cout << "Finishing session" << endl;
@@ -95,7 +102,6 @@ int main(int argc, char **argv) {
   sigIntHandler.sa_flags = 0;
 
   sigaction(SIGINT, &sigIntHandler, NULL);
-  b_continue_session = true;
 
   double offset = 0; // ms
 
@@ -137,10 +143,10 @@ int main(int argc, char **argv) {
   // Create a configuration for configuring the pipeline with a non default profile
   rs2::config cfg;
   cfg.enable_stream(RS2_STREAM_INFRARED, 1,
-          640, 480, RS2_FORMAT_Y8, 30);
+          640, 480, RS2_FORMAT_Y8, fps);
   if (b_stereo_mode) {
     cfg.enable_stream(RS2_STREAM_INFRARED, 2,
-            640, 480, RS2_FORMAT_Y8, 30);
+            640, 480, RS2_FORMAT_Y8, fps);
   }
   cfg.enable_stream(RS2_STREAM_ACCEL, RS2_FORMAT_MOTION_XYZ32F); //, 250); // 63
   cfg.enable_stream(RS2_STREAM_GYRO, RS2_FORMAT_MOTION_XYZ32F); //, 400);
@@ -243,6 +249,39 @@ int main(int argc, char **argv) {
   cv::namedWindow("cam0",cv::WINDOW_AUTOSIZE);
 #endif
 
+  std::thread([&](){
+    while (b_continue_session) {
+      {
+        std::unique_lock<std::mutex> lk(imu_mutex);
+        if (!image_left_queue.empty()) {
+          while (!image_left_queue.empty()) {
+            double ts = image_left_queue.front().first;
+            cv::Mat image_left = image_left_queue.front().second;
+            image_left_queue.pop_front();
+            cv::Mat image_right;
+            if (b_stereo_mode) {
+              image_right = image_right_queue.front().second;
+              image_right_queue.pop_front();
+            }
+            lk.unlock();
+            long int imTsInt = (long int) (1e9 * ts);
+            string imgRepo = directory + "/cam0/" + to_string(imTsInt) + ".png";
+            string rightimgRepo = directory + "/cam1/" + to_string(imTsInt) + ".png";
+            cv::imwrite(imgRepo, image_left);
+            cam0TsFile << imTsInt << endl;
+            if (b_stereo_mode) {
+              cv::imwrite(rightimgRepo, image_right);
+            }
+            lk.lock();
+          }
+        } else {
+          lk.unlock();
+          std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+      }
+    }
+  }).detach();
+
   cv::Mat im, imright;
   while (b_continue_session) {
     std::vector<rs2_vector> vGyro;
@@ -258,25 +297,24 @@ int main(int argc, char **argv) {
       }
       std::lock_guard<std::mutex> lk(imu_mutex);
       static int recv_cnt = 0;
-      if (++recv_cnt >= 33) {
+      if (++recv_cnt >= fps) {
         recv_cnt = 0;
         std::cout << "saving.." << std::endl;
       }
       // Copy the IMU data to local single thread variables
-      vGyro = v_gyro_data;
-      vGyro_times = v_gyro_timestamp;
-      vAccel = v_acc_data;
-      vAccel_times = v_acc_timestamp;
+      vGyro = std::move(v_gyro_data);
+      vGyro_times = std::move(v_gyro_timestamp);
+      vAccel = std::move(v_acc_data);
+      vAccel_times = std::move(v_acc_timestamp);
       imTs = timestamp_image;
       im = imCV.clone();
+      auto image_pair = std::make_pair(imTs, im);
+      image_left_queue.push_back(image_pair);
       if (b_stereo_mode) {
         imright = imRightCV.clone();
+        auto image_pair = std::make_pair(imTs, imright);
+        image_right_queue.push_back(image_pair);
       }
-      // Clear IMU vectors
-      v_gyro_data.clear();
-      v_gyro_timestamp.clear();
-      v_acc_data.clear();
-      v_acc_timestamp.clear();
 
       image_ready = false;
     }
@@ -284,24 +322,10 @@ int main(int argc, char **argv) {
 #ifdef ENABLE_VIEWER
       cv::imshow("cam0",im);
 #endif
-
+    auto start_p = std::chrono::high_resolution_clock::now();
       // save image and IMU data
-      long int imTsInt = (long int) (1e9*imTs);
-      if(!im.empty()) {
-        string imgRepo = directory + "/cam0/" + to_string(imTsInt) + ".png";
-        cv::imwrite(imgRepo, im);
-        cam0TsFile << imTsInt << endl;
-      } else {
-        cout << "Left image empty!! \n";
-      }
 
-    if(!imright.empty()) {
-      string rightimgRepo = directory + "/cam1/" + to_string(imTsInt) + ".png";
-      cv::imwrite(rightimgRepo, imright);
-    } else {
-      cout << "Right image empty!! \n";
-    }
-
+    auto save_image_p = std::chrono::high_resolution_clock::now();
     for (int i = 0; i < vAccel.size(); ++i) {
       accFile << std::setprecision(15) << vAccel_times[i]
               << "," << vAccel[i].x << "," << vAccel[i].y << "," << vAccel[i].z
@@ -313,11 +337,18 @@ int main(int argc, char **argv) {
                << "," << vGyro[i].x << "," << vGyro[i].y << "," << vGyro[i].z
                << std::endl;
     }
+    auto save_imu_p = std::chrono::high_resolution_clock::now();
+    auto image_dur = std::chrono::duration_cast<
+            std::chrono::milliseconds>(save_image_p - start_p).count();
+    auto imu_dur = std::chrono::duration_cast<
+            std::chrono::milliseconds>(save_imu_p - save_image_p).count();
+    //  std::cout << "img dur: " << image_dur << " imu dur: " << imu_dur << std::endl;
 #ifdef ENABLE_VIEWER
       cv::waitKey(10);
 #endif
     static unsigned int cnt = 0;
-    static unsigned int num_cnm = 9900;
+    //  5min
+    static unsigned int num_cnm = fps * 60 * 5;
     if (++cnt >= num_cnm) {
       b_continue_session = false;
       std::cout << "saved " << num_cnm << " images!" << std::endl;

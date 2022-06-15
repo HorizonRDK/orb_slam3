@@ -7,11 +7,17 @@ File.version: "1.0"
 
 Camera.type: "Rectified"
 
-# Rectified Camera calibration (OpenCV)
-Camera1.fx: 382.613
-Camera1.fy: 382.613
-Camera1.cx: 320.183
-Camera1.cy: 236.455
+# Right Camera calibration and distortion parameters (OpenCV)
+Camera1.fx: 385.6708237075739
+Camera1.fy: 386.5285077234134
+Camera1.cx: 319.60504749233735
+Camera1.cy: 238.6783498055523
+
+# distortion parameters
+Camera1.k1: 0.0014258094371158987
+Camera1.k2: -0.0010352115473223368
+Camera1.p1: 0.0009239446445560075
+Camera1.p2: -0.0004722546642747975
 
 Stereo.b: 0.0499585
 
@@ -30,13 +36,13 @@ Stereo.ThDepth: 40.0
 
 # Transformation from body-frame (imu) to left camera
 IMU.T_b_c1: !!opencv-matrix
-   rows: 4
-   cols: 4
-   dt: f
-   data: [1.0, 0.0, 0.0, -0.005,
-          0.0, 1.0, 0.0, -0.005,
-          0.0, 0.0, 1.0, 0.0117,
-          0.0, 0.0, 0.0, 1.0]
+  rows: 4
+  cols: 4
+  dt: f
+  data: [0.9999903889898114, -0.004166592819702476, 0.0013643431684143509, 0.0071809633622454405,
+         0.004170409543286206, 0.9999873650115008, -0.002806688724749215, -0.004091994212803905,
+         -0.0013526316008664284, 0.0028123516194051563, 0.999995130521205, -0.015882079310435296,
+         0.0, 0.0, 0.0, 1.0]
 
 # Do not insert KFs when recently lost
 IMU.InsertKFsWhenLost: 0
