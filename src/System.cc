@@ -1371,6 +1371,17 @@ vector<cv::KeyPoint> System::GetTrackedKeyPointsUn()
     return mTrackedKeyPointsUn;
 }
 
+//添加获取当前地图所有点云接口
+vector<MapPoint*> System::GetAllMapPoints()
+{
+    return mpAtlas->GetCurrentMap()->GetAllMapPoints();
+}
+
+FrameDrawer* System::GetmpFrameDrawe()
+{
+    return mpFrameDrawer;
+}
+
 double System::GetTimeFromIMUInit()
 {
     double aux = mpLocalMapper->GetCurrKFTime()-mpLocalMapper->mFirstTs;

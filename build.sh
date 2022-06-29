@@ -40,6 +40,15 @@ build_Thirdparty() {
   done
 }
 
+build_Examples_ROS2(){
+  echo "build Examples_ROS2"
+  cd ${FILE_PATH}/Examples_ROS2
+  colcon build --merge-install  --cmake-force-configure  --cmake-args  -DCMAKE_BUILD_TYPE=Release  -DBUILD_TESTING:BOOL=OFF  ${TOOL_CHAIN_CMD}
+  cd ..
+  
+}
+
+
 uncompress_vocabulary() {
   echo "Uncompress vocabulary ..."
   cd ${FILE_PATH}/Vocabulary
@@ -71,6 +80,7 @@ cd build
 cmake .. -DCMAKE_BUILD_TYPE=Release -DENABLE_VIEWER=${ENABLE_VIEWER} ${TOOL_CHAIN_CMD}
 make -j2
 
+build_Examples_ROS2
 clean_Thirdparty
 uncompress_vocabulary
 

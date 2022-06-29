@@ -389,9 +389,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples_old/Monocular)
 #        Examples_old/Monocular/mono_kitti.cc)
 #target_link_libraries(mono_kitti_old ${PROJECT_NAME})
 #
-#add_executable(mono_euroc_old
-#        Examples_old/Monocular/mono_euroc.cc)
-#target_link_libraries(mono_euroc_old ${PROJECT_NAME})
+add_executable(mono_euroc_old
+        Examples_old/Monocular/mono_euroc.cc)
+target_link_libraries(mono_euroc_old ${PROJECT_NAME})
 #
 #add_executable(mono_tum_vi_old
 #        Examples_old/Monocular/mono_tum_vi.cc)

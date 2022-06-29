@@ -65,6 +65,8 @@ Thirdparty/g2o/build/
 Thirdparty/g2o/config.h
 Thirdparty/g2o/lib/
 Vocabulary/ORBvoc.txt
+Vocabulary/GCNvoc.bin
+Vocabulary/NanJingOffice.txt
 build/
 
 lib/
@@ -93,5 +95,9 @@ borrar/*
 gcn2_640x480.pt
 
 Examples/Calibration/recorder/
+
+Examples_ROS2/build
+Examples_ROS2/install
+Examples_ROS2/log
 
 */ExecMean.txt

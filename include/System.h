@@ -177,6 +177,13 @@ public:
     std::vector<MapPoint*> GetTrackedMapPoints();
     std::vector<cv::KeyPoint> GetTrackedKeyPointsUn();
 
+
+    //添加获取当前地图所有点云接口
+    std::vector<MapPoint*> GetAllMapPoints();
+
+   //添加获取 mpFrameDrawer 成员变量接口
+   FrameDrawer* GetmpFrameDrawe();
+
     // For debugging
     double GetTimeFromIMUInit();
     bool isLost();
