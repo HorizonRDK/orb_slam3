@@ -40,40 +40,44 @@
 class ImageGrabber
 {
 public:
-    ImageGrabber(ORB_SLAM3::System* pSLAM):mpSLAM(pSLAM)
+    ImageGrabber(ORB_SLAM3::System* pSLAM):mpSLAM_(pSLAM)
     {
-        node = rclcpp::Node::make_shared("ros2_rgbd");
-        path_publisher=node->create_publisher<nav_msgs::msg::Path>("camera_path",10);
-        pointcloud2_publisher=node->create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2",10);
-        frame_publisher=node->create_publisher<sensor_msgs::msg::Image>("frame",10);
+        node_ = rclcpp::Node::make_shared("ros2_rgbd");
+        path_publisher_=node_->create_publisher<nav_msgs::msg::Path>("camera_path",10);
+        pointcloud2_publisher_=node_->create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2",10);
+        frame_publisher_=node_->create_publisher<sensor_msgs::msg::Image>("frame",10);
     }
 
     void GrabRGBD(const sensor_msgs::msg::Image::ConstSharedPtr msgRGB,const sensor_msgs::msg::Image::ConstSharedPtr msgD);
 
-    void PubPoseImage();
+    void PubPose();
+    void PubImage();
     void PubPointCloud();
 
-    ORB_SLAM3::System* mpSLAM;
+    ORB_SLAM3::System* mpSLAM_;
 
-    rclcpp::Node::SharedPtr node;
-    nav_msgs::msg::Path path;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr frame_publisher;
+    rclcpp::Node::SharedPtr node_;
+    nav_msgs::msg::Path path_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr frame_publisher_;
 
 private:
     sensor_msgs::msg::PointCloud2 MapPointsToPointCloud (std::vector<ORB_SLAM3::MapPoint*> map_points);
     tf2::Transform TransformFromMat (cv::Mat position_mat);
 
     //显示相关成员变量
-    queue<cv::Mat> image_buffer;
-    queue<Sophus::SE3f> pose_buffer;
-    std::mutex pose_image_buffer_mutex;
-    std::condition_variable pose_image_cv;
+    queue<Sophus::SE3f> pose_buffer_;
+    std::mutex pose_mutex_;
+    std::condition_variable pose_cv_;
 
-    queue<std::vector<ORB_SLAM3::MapPoint*>> point_buffer;
-    std::mutex point_buffer_mutex;
-    std::condition_variable point_cv;
+    queue<cv::Mat> image_buffer_;
+    std::mutex image_mutex_;
+    std::condition_variable image_cv_;
+
+    queue<std::vector<ORB_SLAM3::MapPoint*>> point_buffer_;
+    std::mutex point_mutex_;
+    std::condition_variable point_cv_;
 };
 
 
@@ -83,7 +87,7 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud (std::vector<O
 
     const int num_channels = 3; // x y z
 
-    cloud.header.stamp = node->get_clock()->now();
+    cloud.header.stamp = node_->get_clock()->now();
     cloud.header.frame_id = "map";
     cloud.height = 1;
     cloud.width = map_points.size();  //点的个数
@@ -111,10 +115,9 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud (std::vector<O
         if (map_points.at(i)->nObs >= 2)
         {
 
-            data_array[0] = (float)map_points.at(i)->GetWorldPos()(2); //x. Do the transformation by just reading at the position of z instead of x
-            data_array[1] = (float)(-1.0* map_points.at(i)->GetWorldPos()(0)); //y. Do the transformation by just reading at the position of x instead of y
-            data_array[2] = (float)(-1.0* map_points.at(i)->GetWorldPos()(1)); //z. Do the transformation by just reading at the position of y instead of z
-            //TODO dont hack the transformation but have a central conversion function for MapPointsToPointCloud and TransformFromMat
+            data_array[0] = (float)map_points.at(i)->GetWorldPos()(2);
+            data_array[1] = (float)(-1.0* map_points.at(i)->GetWorldPos()(0));
+            data_array[2] = (float)(-1.0* map_points.at(i)->GetWorldPos()(1));
 
             memcpy(cloud_data_ptr+(i*cloud.point_step), data_array, num_channels*sizeof(float));
         }
@@ -168,7 +171,6 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::msg::Image::ConstSharedPtr msgRGB
     }
     catch (cv_bridge::Exception& e)
     {
-        //ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
 
@@ -179,51 +181,50 @@ void ImageGrabber::GrabRGBD(const sensor_msgs::msg::Image::ConstSharedPtr msgRGB
     }
     catch (cv_bridge::Exception& e)
     {
-        //ROS_ERROR("cv_bridge exception: %s", e.what());
         return;
     }
-    Sophus::SE3f Tcw_SE3F=mpSLAM->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,rclcpp::Time(cv_ptrRGB->header.stamp).seconds());
+    Sophus::SE3f Tcw_SE3F=mpSLAM_->TrackRGBD(cv_ptrRGB->image,cv_ptrD->image,rclcpp::Time(cv_ptrRGB->header.stamp).seconds());
 
-    std::unique_lock<std::mutex> locker_pose_image(pose_image_buffer_mutex);
-    pose_buffer.push(Tcw_SE3F);
-    image_buffer.push(mpSLAM->GetmpFrameDrawe()->DrawFrame(1.0f));
-    locker_pose_image.unlock();
-    pose_image_cv.notify_one();
+    std::unique_lock<std::mutex> locker_pose(pose_mutex_);
+    pose_buffer_.push(Tcw_SE3F);
+    locker_pose.unlock();
+    pose_cv_.notify_one();
 
-    std::unique_lock<std::mutex> locker_point(point_buffer_mutex);
-    point_buffer.push(mpSLAM->GetAllMapPoints());
+    std::unique_lock<std::mutex> locker_image(image_mutex_);
+    image_buffer_.push(mpSLAM_->GetmpFrameDrawe()->DrawFrame(1.0f));
+    locker_image.unlock();
+    image_cv_.notify_one();
+
+    std::unique_lock<std::mutex> locker_point(point_mutex_);
+    point_buffer_.push(mpSLAM_->GetAllMapPoints());
     locker_point.unlock();
-    point_cv.notify_one();
+    point_cv_.notify_one();
 }
 
-void ImageGrabber::PubPoseImage()
+void ImageGrabber::PubPose()
 {
     Eigen::Matrix4f Tcw_Matrix;
-    cv::Mat Tcw,toshow;
+    cv::Mat Tcw;
     geometry_msgs::msg::TransformStamped tf_msg;
     geometry_msgs::msg::PoseStamped pose_msg;
-    sensor_msgs::msg::Image img_msg;
-    cv_bridge::CvImage img_bridge;
 
-    tf2_ros::TransformBroadcaster tf_broadcaster(node);
+    tf2_ros::TransformBroadcaster tf_broadcaster(node_);
 
     while (rclcpp::ok())
     {
-        std::unique_lock<std::mutex> locker_pose_image(pose_image_buffer_mutex);
-        while(pose_buffer.empty() || image_buffer.empty())
-            pose_image_cv.wait(locker_pose_image);
-        Tcw_Matrix = pose_buffer.front().matrix();
-        pose_buffer.pop();
-        toshow = image_buffer.front();
-        image_buffer.pop();
-        locker_pose_image.unlock();
+        std::unique_lock<std::mutex> locker_pose(pose_mutex_);
+        while(pose_buffer_.empty())
+            pose_cv_.wait(locker_pose);
+        Tcw_Matrix = pose_buffer_.front().matrix();
+        pose_buffer_.pop();
+        locker_pose.unlock();
 
         cv::eigen2cv(Tcw_Matrix, Tcw);
         tf2::Transform tf_transform = TransformFromMat(Tcw);
 
         tf_msg.header.frame_id = "map";
         tf_msg.child_frame_id = "camera_link";
-        tf_msg.header.stamp = node->get_clock()->now();
+        tf_msg.header.stamp = node_->get_clock()->now();
         tf_msg.transform = tf2::toMsg(tf_transform);
 
         tf_broadcaster.sendTransform(tf_msg);
@@ -237,32 +238,51 @@ void ImageGrabber::PubPoseImage()
         pose_msg.pose.orientation.z = tf_transform.getRotation().getZ();
         pose_msg.pose.orientation.w = tf_transform.getRotation().getW();
 
-        path.header = tf_msg.header;
-        path.poses.push_back(pose_msg);
-        path_publisher->publish(path);
+        path_.header = tf_msg.header;
+        path_.poses.push_back(pose_msg);
+        path_publisher_->publish(path_);
 
-        img_bridge = cv_bridge::CvImage(tf_msg.header, "bgr8", toshow);
+    }
+}
+
+void ImageGrabber::PubImage()
+{
+    sensor_msgs::msg::Image img_msg;
+    cv_bridge::CvImage img_bridge;
+    cv::Mat toshow;
+    std_msgs::msg::Header header;
+
+    while (rclcpp::ok())
+    {
+        std::unique_lock<std::mutex> locker_image(image_mutex_);
+        while (image_buffer_.empty())
+            pose_cv_.wait(locker_image);
+        toshow = image_buffer_.front();
+        image_buffer_.pop();
+        locker_image.unlock();
+
+        img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
         img_bridge.toImageMsg(img_msg);
-        frame_publisher->publish(img_msg);
+        frame_publisher_->publish(img_msg);
     }
 }
 
 void ImageGrabber::PubPointCloud()
 {
-    std::vector<ORB_SLAM3::MapPoint*> orb_point;
-    while(rclcpp::ok())
-    {
-        std::unique_lock<std::mutex> locker_point(point_buffer_mutex);
-        while(point_buffer.empty())
-            point_cv.wait(locker_point);
-        orb_point = point_buffer.front();
-        point_buffer.pop();
+    std::vector<ORB_SLAM3::MapPoint *> orb_point;
+    while (rclcpp::ok()) {
+        std::unique_lock<std::mutex> locker_point(point_mutex_);
+        while (point_buffer_.empty())
+            point_cv_.wait(locker_point);
+        orb_point = point_buffer_.front();
+        point_buffer_.pop();
         locker_point.unlock();
 
-        sensor_msgs::msg::PointCloud2 cloud=MapPointsToPointCloud(orb_point);
-        pointcloud2_publisher->publish(cloud);
+        sensor_msgs::msg::PointCloud2 cloud = MapPointsToPointCloud(orb_point);
+        pointcloud2_publisher_->publish(cloud);
     }
 }
+
 
 int main(int argc, char **argv)
 {
@@ -280,13 +300,13 @@ int main(int argc, char **argv)
 
     ImageGrabber igb(&SLAM);
 
-    message_filters::Subscriber<sensor_msgs::msg::Image> rgb_sub(igb.node, "/camera/rgb/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
-    message_filters::Subscriber<sensor_msgs::msg::Image> depth_sub(igb.node, "/camera/depth_registered/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+    message_filters::Subscriber<sensor_msgs::msg::Image> rgb_sub(igb.node_, "/camera/color/image_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
+    message_filters::Subscriber<sensor_msgs::msg::Image> depth_sub(igb.node_, "/camera/depth/image_rect_raw", rclcpp::SensorDataQoS().get_rmw_qos_profile());
     typedef message_filters::sync_policies::ApproximateTime<sensor_msgs::msg::Image, sensor_msgs::msg::Image> sync_pol;
     message_filters::Synchronizer<sync_pol> sync(sync_pol(10), rgb_sub,depth_sub);
     sync.registerCallback(std::bind(&ImageGrabber::GrabRGBD,&igb,std::placeholders::_1,std::placeholders::_2));
 
-    rclcpp::spin(igb.node);
+    rclcpp::spin(igb.node_);
 
     // Stop all threads
     SLAM.Shutdown();
