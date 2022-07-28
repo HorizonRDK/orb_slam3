@@ -16,33 +16,22 @@
 * If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-#include <algorithm>
-#include <fstream>
-#include <iomanip>
-#include <chrono>
+#include<iostream>
+#include<algorithm>
+#include<fstream>
+#include<iomanip>
+#include<chrono>
 #include <ctime>
 #include <sstream>
-#include <csignal>
 
 #include <opencv2/core/core.hpp>
 
-#include <System.h>
+
+#include<System.h>
 #include "ImuTypes.h"
 #include "Optimizer.h"
 
-#ifdef SUPPORT_SUPERPOINT
-#include <rclcpp/rclcpp.hpp>
-#endif
-
 using namespace std;
-
-bool b_continue_session;
-
-void exit_loop_handler(int s){
-  cout << "Finishing session" << endl;
-  b_continue_session = false;
-}
 
 void LoadImages(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
                 vector<string> &vstrImageLeft, vector<string> &vstrImageRight, vector<double> &vTimeStamps);
@@ -54,15 +43,9 @@ int main(int argc, char **argv)
 {
     if(argc < 5)
     {
-        cerr << endl << "Usage: ./stereo_inertial_euroc"
-                        " path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 "
-                        "(path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) "
-                        << std::endl;
+        cerr << endl << "Usage: ./stereo_inertial_euroc path_to_vocabulary path_to_settings path_to_sequence_folder_1 path_to_times_file_1 (path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) " << endl;
         return 1;
     }
-#ifdef SUPPORT_SUPERPOINT
-  rclcpp::init(argc, argv);
-#endif
 
     const int num_seq = (argc-3)/2;
     cout << "num_seq = " << num_seq << endl;
@@ -102,9 +85,9 @@ int main(int argc, char **argv)
         string pathSeq(argv[(2*seq) + 3]);
         string pathTimeStamps(argv[(2*seq) + 4]);
 
-        string pathCam0 = pathSeq + "/cam0/";
-        string pathCam1 = pathSeq + "/cam1/";
-        string pathImu = pathSeq + "/imu0.csv";
+        string pathCam0 = pathSeq + "/mav0/cam0/data";
+        string pathCam1 = pathSeq + "/mav0/cam1/data";
+        string pathImu = pathSeq + "/mav0/imu0/data.csv";
 
         LoadImages(pathCam0, pathCam1, pathTimeStamps, vstrImageLeft[seq], vstrImageRight[seq], vTimestampsCam[seq]);
         cout << "LOADED!" << endl;
@@ -146,19 +129,9 @@ int main(int argc, char **argv)
     cout.precision(17);
 
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
-    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_STEREO, true);
+    ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_STEREO, false);
 
     cv::Mat imLeft, imRight;
-
-    struct sigaction sigIntHandler{};
-
-    sigIntHandler.sa_handler = exit_loop_handler;
-    sigemptyset(&sigIntHandler.sa_mask);
-    sigIntHandler.sa_flags = 0;
-
-    sigaction(SIGINT, &sigIntHandler, nullptr);
-    b_continue_session = true;
-
     for (seq = 0; seq<num_seq; seq++)
     {
         // Seq loop
@@ -170,12 +143,9 @@ int main(int argc, char **argv)
         int proccIm = 0;
         for(int ni=0; ni<nImages[seq]; ni++, proccIm++)
         {
-          if (!b_continue_session) {
-            break;
-          }
             // Read left and right images from file
-            imLeft = cv::imread(vstrImageLeft[seq][ni],cv::IMREAD_GRAYSCALE);
-            imRight = cv::imread(vstrImageRight[seq][ni],cv::IMREAD_GRAYSCALE);
+            imLeft = cv::imread(vstrImageLeft[seq][ni],cv::IMREAD_UNCHANGED);
+            imRight = cv::imread(vstrImageRight[seq][ni],cv::IMREAD_UNCHANGED);
 
             if(imLeft.empty())
             {
@@ -212,8 +182,7 @@ int main(int argc, char **argv)
     #endif
 
             // Pass the images to the SLAM system
-            //  SLAM.TrackStereo(imLeft,imRight,tframe,vImuMeas);
-            SLAM.TrackStereoAsync(imLeft, imRight, tframe, vImuMeas, "");
+            SLAM.TrackStereo(imLeft,imRight,tframe,vImuMeas);
 
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();

@@ -99,4 +99,6 @@ orb_slam3_example_ros2/build
 orb_slam3_example_ros2/install
 orb_slam3_example_ros2/log
 
+.idea/
+
 */ExecMean.txt
