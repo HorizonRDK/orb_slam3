@@ -37,7 +37,7 @@
 #include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
 
-#include"include/System.h"
+#include "include/System.h"
 
 
 class ImuGrabber
@@ -360,7 +360,7 @@ int main(int argc, char **argv)
     bool bEqual = false;
     if(argc!=3)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM3 Stereo_Inertial path_to_vocabulary path_to_settings " << endl;
+        cerr << endl << "Usage: ros2 run orb_slam3_example_ros2 stereo_inertial path_to_vocabulary path_to_settings " << endl;
         rclcpp::shutdown();
         return 1;
     }

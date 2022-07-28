@@ -35,7 +35,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <nav_msgs/msg/path.hpp>
 
-#include"include/System.h"
+#include "include/System.h"
 
 class ImageGrabber
 {
@@ -290,7 +290,7 @@ int main(int argc, char **argv)
 
     if(argc != 3)
     {
-        cerr << endl << "Usage: rosrun ORB_SLAM3 RGBD path_to_vocabulary path_to_settings" << endl;
+        cerr << endl << "Usage: ros2 run orb_slam3_example_ros2 rgbd path_to_vocabulary path_to_settings" << endl;
         rclcpp::shutdown();
         return 1;
     }
