@@ -35,7 +35,7 @@
 #include <sensor_msgs/msg/point_cloud2.hpp>
 #include <nav_msgs/msg/path.hpp>
 
-#include "include/System.h"
+#include "orb_slam3/System.h"
 
 class ImageGrabber
 {
