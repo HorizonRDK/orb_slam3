@@ -7,97 +7,96 @@
 # Unignore all dirs
 !*/
 
-CMakeLists.txt.user
-CMakeLists_modified.txt
+ORB_SLAM3/CMakeLists.txt.user
+ORB_SLAM3/CMakeLists_modified.txt
 
-Examples/RGB-D/rgbd_tum
-Examples/RGB-D/rgbd_realsense_D435i
+ORB_SLAM3/Examples/RGB-D/rgbd_tum
+ORB_SLAM3/Examples/RGB-D/rgbd_realsense_D435i
 
-Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i
+ORB_SLAM3/Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i
 
-Examples/Monocular/mono_realsense_D435i
-Examples/Monocular/mono_euroc
-Examples/Monocular/mono_kitti
-Examples/Monocular/mono_tum
-Examples/Monocular/mono_tum_vi
-Examples/Monocular/mono_realsense_t265
+ORB_SLAM3/Examples/Monocular/mono_realsense_D435i
+ORB_SLAM3/Examples/Monocular/mono_euroc
+ORB_SLAM3/Examples/Monocular/mono_kitti
+ORB_SLAM3/Examples/Monocular/mono_tum
+ORB_SLAM3/Examples/Monocular/mono_tum_vi
+ORB_SLAM3/Examples/Monocular/mono_realsense_t265
 
-Examples/Stereo/stereo_euroc
-Examples/Stereo/stereo_kitti
-Examples/Stereo/stereo_tum_vi
-Examples/Stereo/stereo_realsense_t265
-Examples/Stereo/stereo_realsense_D435i
+ORB_SLAM3/Examples/Stereo/stereo_euroc
+ORB_SLAM3/Examples/Stereo/stereo_kitti
+ORB_SLAM3/Examples/Stereo/stereo_tum_vi
+ORB_SLAM3/Examples/Stereo/stereo_realsense_t265
+ORB_SLAM3/Examples/Stereo/stereo_realsense_D435i
 
-Examples/Monocular-Inertial/mono_inertial_euroc
-Examples/Monocular-Inertial/mono_inertial_tum_vi
-Examples/Monocular-Inertial/mono_inertial_realsense_t265
-Examples/Monocular-Inertial/mono_inertial_realsense_D435i
-Examples/Monocular-Inertial/mono_inertial_realsense_D435i_2
+ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_euroc
+ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_tum_vi
+ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_realsense_t265
+ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_realsense_D435i
+ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_realsense_D435i_2
 
-Examples/Stereo-Inertial/stereo_inertial_euroc
-Examples/Stereo-Inertial/stereo_inertial_tum_vi
-Examples/Stereo-Inertial/stereo_inertial_realsense_t265
-Examples/Stereo-Inertial/stereo_inertial_realsense_D435i
+ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_euroc
+ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_tum_vi
+ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_realsense_t265
+ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_realsense_D435i
 
 
-Examples/ROS/ORB_SLAM3/Mono
-Examples/ROS/ORB_SLAM3/Mono_Inertial
-Examples/ROS/ORB_SLAM3/MonoAR
-Examples/ROS/ORB_SLAM3/RGBD
-Examples/ROS/ORB_SLAM3/Stereo
-Examples/ROS/ORB_SLAM3/Stereo_Inertial
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/Mono
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/Mono_Inertial
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/MonoAR
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/RGBD
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/Stereo
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/Stereo_Inertial
 
-Examples/Calibration/recorder_realsense_D435i
+ORB_SLAM3/Examples/Calibration/recorder_realsense_D435i
 
-Examples/Tests/viewer_dataset
-Examples/Tests/sophus_test
+ORB_SLAM3/Examples/Tests/viewer_dataset
+ORB_SLAM3/Examples/Tests/sophus_test
 
-Examples/ROS/ORB_SLAM3/CMakeLists.txt.user
-Examples/ROS/ORB_SLAM3/build/
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/CMakeLists.txt.user
+ORB_SLAM3/Examples/ROS/ORB_SLAM3/build/
 
-KeyFrameTrajectory.txt
-CameraTrajectory.txt
-kf_*.txt
-f_*.txt
-Thirdparty/DBoW2/build/
-Thirdparty/DBoW2/lib/
-Thirdparty/g2o/build/
-Thirdparty/g2o/config.h
-Thirdparty/g2o/lib/
-Vocabulary/ORBvoc.txt
-Vocabulary/GCNvoc.bin
-Vocabulary/NanJingOffice.txt
-build/
+ORB_SLAM3/KeyFrameTrajectory.txt
+ORB_SLAM3/CameraTrajectory.txt
+ORB_SLAM3/kf_*.txt
+ORB_SLAM3/f_*.txt
+ORB_SLAM3/Thirdparty/DBoW2/build/
+ORB_SLAM3/Thirdparty/DBoW2/lib/
+ORB_SLAM3/Thirdparty/g2o/build/
+ORB_SLAM3/Thirdparty/g2o/config.h
+ORB_SLAM3/Thirdparty/g2o/lib/
+ORB_SLAM3/Vocabulary/ORBvoc.txt
+ORB_SLAM3/Vocabulary/ORBvoc_refine.txt
+ORB_SLAM3/build/
 
-lib/
+ORB_SLAM3/lib/
 
 cmake_modules/
 cmake-build-debug/
 
-ExecMean.txt
-SessionInfo.txt
-Results_Euroc.txt
-LBA_Stats.txt
-LocalMapTimeStats.txt
-TrackLocalMapStats.txt
-TrackingTimeStats.txt
-time*
-Time*
-Table_Euroc
-Table_TUMVI_rooms/
-*.pyc
-*.osa
-.idea/
-my_settings.txt
+ORB_SLAM3/ExecMean.txt
+ORB_SLAM3/SessionInfo.txt
+ORB_SLAM3/Results_Euroc.txt
+ORB_SLAM3/LBA_Stats.txt
+ORB_SLAM3/LocalMapTimeStats.txt
+ORB_SLAM3/TrackLocalMapStats.txt
+ORB_SLAM3/TrackingTimeStats.txt
+ORB_SLAM3/time*
+ORB_SLAM3/Time*
+ORB_SLAM3/Table_Euroc
+ORB_SLAM3/Table_TUMVI_rooms/
+ORB_SLAM3/*.pyc
+ORB_SLAM3/*.osa
+ORB_SLAM3/.idea/
+ORB_SLAM3/my_settings.txt
 
-borrar/*
+ORB_SLAM3/borrar/*
 
-gcn2_640x480.pt
+ORB_SLAM3/gcn2_640x480.pt
 
-Examples/Calibration/recorder/
+ORB_SLAM3/Examples/Calibration/recorder/
 
-Examples_ROS2/build
-Examples_ROS2/install
-Examples_ROS2/log
+orb_slam3_example_ros2/build
+orb_slam3_example_ros2/install
+orb_slam3_example_ros2/log
 
 */ExecMean.txt
