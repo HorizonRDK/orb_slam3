@@ -14,30 +14,6 @@ if (ENABLE_VIEWER)
     find_package(Pangolin REQUIRED)
 endif()
 
-
-option(SUPPORT_GCNV2 "support GCNv2 network instead of ORBextractor" OFF)
-set(GCNFILE "")
-message("SUPPORT_GCNV2: ${SUPPORT_GCNV2}")
-
-if (SUPPORT_GCNV2)
-    add_definitions(-DSUPPORT_GCNV2)
-    #add_definitions(-D_GLIBCXX_USE_CXX11_ABI=1)
-    set(GCNFILE src/GCNextractor.cc)
-    if(TORCH_PATH)
-        message("TORCH_PATH set to: ${TORCH_PATH}")
-        set(Torch_DIR ${TORCH_PATH})
-    else()
-        message(FATAL_ERROR "Need to specify Torch path,
-                e.g., pytorch/torch/share/cmake/Torch ")
-    endif()
-    find_package(Torch REQUIRED)
-    message(STATUS "Torch version is: ${Torch_VERSION}")
-    if(Torch_VERSION GREATER 1.0.1)
-        message(STATUS "Torch version is newer than v1.0.1, will use new api")
-        add_definitions(-DTORCH_NEW_API)
-    endif()
-endif()
-
 option(SUPPORT_SUPERPOINT "support Superpoint network instead of ORBextractor" ON)
 set(SUPERPOINTFILE "")
 if (SUPPORT_SUPERPOINT)
@@ -59,16 +35,13 @@ if (SUPPORT_SUPERPOINT)
     )
 endif()
 
-
 set(CMAKE_PREFIX_PATH "${PROJECT_SOURCE_DIR}/build/;${CMAKE_PREFIX_PATH}")
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w -O3 -g")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -O3 -g")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -w -O3 ")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -w -O3 ")
 set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} ")
 set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} ")
 set(OpenSSL_LIBRARY_PATH ${CMAKE_SYSROOT}/usr/lib/aarch64-linux-gnu/)
-
-
 
 
 # Check C++11 or C++0x support
@@ -105,8 +78,6 @@ MESSAGE(${OpenCV_VERSION})
 find_package(Eigen3 REQUIRED)
 find_package(realsense2)
 
-message("TORCH_INCLUDE_DIRS: ${TORCH_INCLUDE_DIRS}")
-
 include_directories(
 ${PROJECT_SOURCE_DIR}
 ${PROJECT_SOURCE_DIR}/include
@@ -126,7 +97,6 @@ src/LocalMapping.cc
 src/LoopClosing.cc
 src/ORBextractor.cc
 src/ORBmatcher.cc
-${GCNFILE}
 ${SUPERPOINTFILE}
 src/FrameDrawer.cc
 src/Converter.cc
@@ -193,8 +163,6 @@ target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
-#${PROJECT_SOURCE_DIR}/lib/libDBoW3.so
-#${PROJECT_SOURCE_DIR}/lib/libg2o.so
 DBoW3
 g2o
 -lboost_serialization
@@ -226,9 +194,9 @@ endif()
 # RGB-D examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/RGB-D)
 
-#add_executable(rgbd_tum
-#        Examples/RGB-D/rgbd_tum.cc)
-#target_link_libraries(rgbd_tum ${PROJECT_NAME})
+add_executable(rgbd_tum
+        Examples/RGB-D/rgbd_tum.cc)
+target_link_libraries(rgbd_tum ${PROJECT_NAME})
 
 if(realsense2_FOUND)
     add_executable(rgbd_realsense_D435i
@@ -249,28 +217,21 @@ endif()
 #Stereo examples
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo)
 
-#add_executable(stereo_kitti
-#        Examples/Stereo/stereo_kitti.cc)
-#target_link_libraries(stereo_kitti ${PROJECT_NAME})
+add_executable(stereo_kitti
+        Examples/Stereo/stereo_kitti.cc)
+target_link_libraries(stereo_kitti ${PROJECT_NAME})
 
 add_executable(stereo_euroc
         Examples/Stereo/stereo_euroc.cc)
-target_link_libraries(stereo_euroc ${PROJECT_NAME} ${OpenCV_LIBS}
-        ${EIGEN3_LIBS}
-        ${Pangolin_LIBRARIES}
-        ${TORCH_LIBRARIES}
-#        ${PROJECT_SOURCE_DIR}/lib/libDBoW3.so
-#        ${PROJECT_SOURCE_DIR}/lib/libg2o.so
-         DBoW3
-         g2o
-        -lboost_serialization
-        #-lcrypto
-        ${OpenSSL_LIBRARY_PATH}/libcrypto.so.1.1
-        -lpthread)
+target_link_libraries(stereo_euroc ${PROJECT_NAME})
 
-#add_executable(stereo_tum_vi
-#        Examples/Stereo/stereo_tum_vi.cc)
-#target_link_libraries(stereo_tum_vi ${PROJECT_NAME})
+add_executable(stereo_tum_vi
+        Examples/Stereo/stereo_tum_vi.cc)
+target_link_libraries(stereo_tum_vi ${PROJECT_NAME})
+
+add_executable(stereo_realsense_D435i_image
+        Examples/Stereo/stereo_realsense_D435i_image.cc)
+target_link_libraries(stereo_realsense_D435i_image ${PROJECT_NAME})
 
 if(realsense2_FOUND)
 #    add_executable(stereo_realsense_t265
@@ -301,6 +262,10 @@ add_executable(mono_tum_vi
         Examples/Monocular/mono_tum_vi.cc)
 target_link_libraries(mono_tum_vi ${PROJECT_NAME})
 
+add_executable(mono_realsense_D435i_image
+        Examples/Monocular/mono_realsense_D435i_image.cc)
+target_link_libraries(mono_realsense_D435i_image ${PROJECT_NAME})
+
 if(realsense2_FOUND)
 #    add_executable(mono_realsense_t265
 #            Examples/Monocular/mono_realsense_t265.cc)
@@ -318,9 +283,13 @@ add_executable(mono_inertial_euroc
         Examples/Monocular-Inertial/mono_inertial_euroc.cc)
 target_link_libraries(mono_inertial_euroc ${PROJECT_NAME})
 
-#add_executable(mono_inertial_tum_vi
-#        Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
-#target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
+add_executable(mono_inertial_tum_vi
+        Examples/Monocular-Inertial/mono_inertial_tum_vi.cc)
+target_link_libraries(mono_inertial_tum_vi ${PROJECT_NAME})
+
+add_executable(mono_inertial_realsense_D435i_image
+        Examples/Monocular-Inertial/mono_inertial_realsense_D435i_image.cc)
+target_link_libraries(mono_inertial_realsense_D435i_image ${PROJECT_NAME})
 
 if(realsense2_FOUND)
 #    add_executable(mono_inertial_realsense_t265
@@ -338,10 +307,14 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${PROJECT_SOURCE_DIR}/Examples/Stereo-Inertia
 add_executable(stereo_inertial_euroc
         Examples/Stereo-Inertial/stereo_inertial_euroc.cc)
 target_link_libraries(stereo_inertial_euroc ${PROJECT_NAME})
-#
-#add_executable(stereo_inertial_tum_vi
-#        Examples/Stereo-Inertial/stereo_inertial_tum_vi.cc)
-#target_link_libraries(stereo_inertial_tum_vi ${PROJECT_NAME})
+
+add_executable(stereo_inertial_tum_vi
+        Examples/Stereo-Inertial/stereo_inertial_tum_vi.cc)
+target_link_libraries(stereo_inertial_tum_vi ${PROJECT_NAME})
+
+add_executable(stereo_inertial_realsense_D435i_image
+        Examples/Stereo-Inertial/stereo_inertial_realsense_D435i_image.cc)
+target_link_libraries(stereo_inertial_realsense_D435i_image ${PROJECT_NAME})
 
 if(realsense2_FOUND)
 #    add_executable(stereo_inertial_realsense_t265

@@ -11,33 +11,26 @@ ORB_SLAM3/CMakeLists.txt.user
 ORB_SLAM3/CMakeLists_modified.txt
 
 ORB_SLAM3/Examples/RGB-D/rgbd_tum
-ORB_SLAM3/Examples/RGB-D/rgbd_realsense_D435i
-
-ORB_SLAM3/Examples/RGB-D-Inertial/rgbd_inertial_realsense_D435i
-
-ORB_SLAM3/Examples/Monocular/mono_realsense_D435i
+ 
 ORB_SLAM3/Examples/Monocular/mono_euroc
 ORB_SLAM3/Examples/Monocular/mono_kitti
 ORB_SLAM3/Examples/Monocular/mono_tum
 ORB_SLAM3/Examples/Monocular/mono_tum_vi
-ORB_SLAM3/Examples/Monocular/mono_realsense_t265
+
 
 ORB_SLAM3/Examples/Stereo/stereo_euroc
 ORB_SLAM3/Examples/Stereo/stereo_kitti
 ORB_SLAM3/Examples/Stereo/stereo_tum_vi
-ORB_SLAM3/Examples/Stereo/stereo_realsense_t265
-ORB_SLAM3/Examples/Stereo/stereo_realsense_D435i
+
 
 ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_euroc
 ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_tum_vi
 ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_realsense_t265
-ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_realsense_D435i
 ORB_SLAM3/Examples/Monocular-Inertial/mono_inertial_realsense_D435i_2
 
 ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_euroc
 ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_tum_vi
 ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_realsense_t265
-ORB_SLAM3/Examples/Stereo-Inertial/stereo_inertial_realsense_D435i
 
 
 ORB_SLAM3/Examples/ROS/ORB_SLAM3/Mono
@@ -47,7 +40,6 @@ ORB_SLAM3/Examples/ROS/ORB_SLAM3/RGBD
 ORB_SLAM3/Examples/ROS/ORB_SLAM3/Stereo
 ORB_SLAM3/Examples/ROS/ORB_SLAM3/Stereo_Inertial
 
-ORB_SLAM3/Examples/Calibration/recorder_realsense_D435i
 
 ORB_SLAM3/Examples/Tests/viewer_dataset
 ORB_SLAM3/Examples/Tests/sophus_test
@@ -59,8 +51,8 @@ ORB_SLAM3/KeyFrameTrajectory.txt
 ORB_SLAM3/CameraTrajectory.txt
 ORB_SLAM3/kf_*.txt
 ORB_SLAM3/f_*.txt
-ORB_SLAM3/Thirdparty/DBoW2/build/
-ORB_SLAM3/Thirdparty/DBoW2/lib/
+ORB_SLAM3/Thirdparty/DBoW3/build/
+ORB_SLAM3/Thirdparty/DBoW3/lib/
 ORB_SLAM3/Thirdparty/g2o/build/
 ORB_SLAM3/Thirdparty/g2o/config.h
 ORB_SLAM3/Thirdparty/g2o/lib/

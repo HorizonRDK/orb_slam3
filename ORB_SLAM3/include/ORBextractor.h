@@ -46,7 +46,6 @@ class ORBextractor {
 public:
     enum EXTRACTOR_TYPE {
         ORB = 0,
-        GCNv2,
         SUPERPOINT
     };
     static ORBextractor* make_extractor(

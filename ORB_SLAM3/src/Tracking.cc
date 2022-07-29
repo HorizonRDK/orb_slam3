@@ -593,9 +593,7 @@ void Tracking::newParameterLoader(Settings *settings) {
                   ORBextractor::EXTRACTOR_TYPE::ORB;
 
   auto extractor_tpye = settings->extractor_tpye();
-  if (extractor_tpye == "GCNv2") {
-    extractorType = ORBextractor::EXTRACTOR_TYPE::GCNv2;
-  } else if (extractor_tpye == "SUPERPOINT") {
+  if (extractor_tpye == "SUPERPOINT") {
     extractorType = ORBextractor::EXTRACTOR_TYPE::SUPERPOINT;
   }
 
@@ -1278,7 +1276,7 @@ bool Tracking::ParseORBParamFile(cv::FileStorage &fSettings) {
   }
 
   ORBextractor::EXTRACTOR_TYPE extractorType =
-          ORBextractor::EXTRACTOR_TYPE::GCNv2;
+          ORBextractor::EXTRACTOR_TYPE::ORB;
 
   mpORBextractorLeft = ORBextractor::make_extractor(
           nFeatures, fScaleFactor, nLevels, fIniThFAST, fMinThFAST,

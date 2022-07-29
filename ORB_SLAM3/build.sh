@@ -52,7 +52,7 @@ build_Examples_ROS2(){
 uncompress_vocabulary() {
   echo "Uncompress vocabulary ..."
   cd ${FILE_PATH}/Vocabulary
-  tar -xf ORBvoc.txt.tar.gz
+  tar -xvf ORBvoc.txt.tar.gz
   cd ..
 }
 

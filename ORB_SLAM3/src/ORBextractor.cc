@@ -1222,14 +1222,6 @@ ORBextractor* ORBextractor::make_extractor(
     case EXTRACTOR_TYPE::ORB :
       return new ORBextractor(
               nfeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
-    case EXTRACTOR_TYPE::GCNv2 :
-#ifdef SUPPORT_GCNV2
-      return new GCNextractor(
-              nfeatures, scaleFactor, nlevels, iniThFAST, minThFAST);
-#else
-      std::cout << "Unsupport GCNv2" << std::endl;
-      return nullptr;
-#endif
     case EXTRACTOR_TYPE::SUPERPOINT:
 #ifdef SUPPORT_SUPERPOINT
       return new SuperPointextractor(
