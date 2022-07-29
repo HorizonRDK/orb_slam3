@@ -1471,7 +1471,9 @@ std::shared_ptr<Frame> Tracking::CreateFrame(
       color_codes = cv::COLOR_BGR2GRAY;
     }
     cv::cvtColor(imLeft, image_left, color_codes);
-    cv::cvtColor(imRight, image_right, color_codes);
+    if (mSensor == System::STEREO || mSensor == System::IMU_STEREO) {
+        cv::cvtColor(imRight, image_right, color_codes);
+    }
   } else if( mImGray.channels() == 4) {
     if (mbRGB) {
       color_codes = cv::COLOR_RGBA2GRAY;
@@ -1479,7 +1481,14 @@ std::shared_ptr<Frame> Tracking::CreateFrame(
       color_codes = cv::COLOR_BGRA2GRAY;
     }
     cv::cvtColor(imLeft, image_left, color_codes);
-    cv::cvtColor(imRight, image_right, color_codes);
+    if (mSensor == System::STEREO || mSensor == System::IMU_STEREO) {
+      cv::cvtColor(imRight, image_right, color_codes);
+    }
+  }
+
+  if (mSensor == System::RGBD || mSensor == System::IMU_RGBD) {
+    if ((fabs(mDepthMapFactor - 1.0f) > 1e-5) || imRight.type() != CV_32F)
+      imRight.convertTo(imRight, CV_32F, mDepthMapFactor);
   }
 
   if (mSensor == System::STEREO && !mpCamera2) {
@@ -1498,7 +1507,30 @@ std::shared_ptr<Frame> Tracking::CreateFrame(
     frame = std::make_shared<Frame>(image_left, image_right, timestamp,
             mpORBextractorLeft, mpORBextractorRight,mpORBVocabulary,
             mK,mDistCoef,mbf,mThDepth,mpCamera,mpCamera2,mTlr,&mLastFrame,*mpImuCalib);
+  } else if (mSensor == System::RGBD) {
+    frame = std::make_shared<Frame>(mImGray, imRight, timestamp,
+            mpORBextractorLeft, mpORBVocabulary, mK, mDistCoef, mbf, mThDepth, mpCamera);
+  } else if (mSensor == System::IMU_RGBD) {
+    frame = std::make_shared<Frame>(mImGray, imRight, timestamp, mpORBextractorLeft, mpORBVocabulary,
+            mK,mDistCoef, mbf, mThDepth, mpCamera, &mLastFrame, *mpImuCalib);
+  } else if (mSensor == System::MONOCULAR) {
+    if (mState == NOT_INITIALIZED || mState == NO_IMAGES_YET || (lastID - initID) < mMaxFrames) {
+      frame = std::make_shared<Frame>(mImGray, timestamp, mpIniORBextractor,
+              mpORBVocabulary, mpCamera, mDistCoef, mbf, mThDepth);
+    } else {
+      frame = std::make_shared<Frame>(mImGray, timestamp, mpORBextractorLeft,
+              mpORBVocabulary, mpCamera, mDistCoef, mbf, mThDepth);
+    }
+  } else if (mSensor == System::IMU_MONOCULAR) {
+    if (mState == NOT_INITIALIZED || mState == NO_IMAGES_YET) {
+      frame = std::make_shared<Frame>(mImGray, timestamp, mpIniORBextractor,
+              mpORBVocabulary, mpCamera,mDistCoef, mbf, mThDepth, &mLastFrame, *mpImuCalib);
+    } else {
+      frame = std::make_shared<Frame>(mImGray, timestamp, mpORBextractorLeft,
+              mpORBVocabulary, mpCamera, mDistCoef, mbf, mThDepth, &mLastFrame, *mpImuCalib);
+    }
   }
+
   frame->imgLeft = imLeft;
   frame->imgRight = imRight;
   frame->mNameFile = filename;
@@ -1513,7 +1545,7 @@ Sophus::SE3f Tracking::GrabImageStereo(Frame &frame) {
 
 #ifdef REGISTER_TIMES
   vdORBExtract_ms.push_back(mCurrentFrame.mTimeORB_Ext);
-    vdStereoMatch_ms.push_back(mCurrentFrame.mTimeStereoMatch);
+  vdStereoMatch_ms.push_back(mCurrentFrame.mTimeStereoMatch);
 #endif
   Track();
   return mCurrentFrame.GetPose();
@@ -1591,6 +1623,18 @@ Sophus::SE3f Tracking::GrabImageStereo(const cv::Mat &imRectLeft, const cv::Mat 
 }
 
 
+Sophus::SE3f Tracking::GrabImageRGBD(Frame &frame) {
+  mImGray = frame.imgLeft;
+  mCurrentFrame = frame;
+  mCurrentFrame.mnDataset = mnNumDataset;
+
+#ifdef REGISTER_TIMES
+    vdORBExtract_ms.push_back(mCurrentFrame.mTimeORB_Ext);
+#endif
+  Track();
+  return mCurrentFrame.GetPose();
+}
+
 Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, const double &timestamp, string filename)
 {
     mImGray = imRGB;
@@ -1619,11 +1663,6 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
     else if(mSensor == System::IMU_RGBD)
         mCurrentFrame = Frame(mImGray,imDepth,timestamp,mpORBextractorLeft,mpORBVocabulary,mK,mDistCoef,mbf,mThDepth,mpCamera,&mLastFrame,*mpImuCalib);
 
-
-
-
-
-
     mCurrentFrame.mNameFile = filename;
     mCurrentFrame.mnDataset = mnNumDataset;
 
@@ -1636,6 +1675,19 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
     return mCurrentFrame.GetPose();
 }
 
+Sophus::SE3f Tracking::GrabImageMonocular(Frame &frame) {
+  mImGray = frame.imgLeft;
+  if (mState == NO_IMAGES_YET)
+    t0 = frame.mTimeStamp;
+#ifdef REGISTER_TIMES
+  vdORBExtract_ms.push_back(mCurrentFrame.mTimeORB_Ext);
+#endif
+
+  lastID = mCurrentFrame.mnId;
+  Track();
+
+  return mCurrentFrame.GetPose();
+}
 
 Sophus::SE3f Tracking::GrabImageMonocular(const cv::Mat &im, const double &timestamp, string filename)
 {

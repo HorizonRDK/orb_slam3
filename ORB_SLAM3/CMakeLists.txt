@@ -492,17 +492,17 @@ endif()
 
 if (SUPPORT_SUPERPOINT)
 install(DIRECTORY include/
-        DESTINATION include/orb_slam3/
+        DESTINATION include/${PROJECT_NAME}/
         )
 install(DIRECTORY Thirdparty/
         DESTINATION include/orb_slam3/Thirdparty/
         )
 install(TARGETS ${PROJECT_NAME} DBoW3 g2o
-        ARCHIVE DESTINATION lib/orb_slam3
-        LIBRARY DESTINATION lib/orb_slam3
-        RUNTIME DESTINATION bin/orb_slam3
+        ARCHIVE DESTINATION lib
+        LIBRARY DESTINATION lib
+        RUNTIME DESTINATION bin/${PROJECT_NAME}
         )
-ament_export_libraries(orb_slam3 DBoW3 g2o)
+ament_export_libraries(${PROJECT_NAME} DBoW3 g2o)
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
 ament_export_dependencies(dnn_node)

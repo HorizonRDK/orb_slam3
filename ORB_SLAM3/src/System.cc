@@ -261,12 +261,6 @@ void System::CreateFrameAndPush(const cv::Mat &imLeft, const cv::Mat &imRight,
         const double &timestamp, const std::string &filename,
         const std::vector<IMU::Point> &ImuMeas,
         std::shared_ptr<std::promise<Sophus::SE3f>> PosePromise) {
-  if (mSensor != STEREO && mSensor != IMU_STEREO) {
-    std::cerr << "ERROR: you called TrackStereo "
-                 "but input sensor was not set to Stereo nor Stereo-Inertial." << endl;
-    exit(-1);
-  }
-
   cv::Mat imLeftToFeed, imRightToFeed;
   if (settings_ && settings_->needToRectify()) {
     cv::Mat M1l = settings_->M1l();
@@ -310,7 +304,20 @@ void System::CreateTrackFrameThread() {
         lck.unlock();
         //  printf("send ts: %f\n", frame->mTimeStamp);
         auto p1 = std::chrono::high_resolution_clock::now();
-        this->TrackStereo(framewrapper);
+        switch (mSensor) {
+          case eSensor::STEREO :
+          case eSensor::IMU_STEREO :
+            this->TrackStereo(framewrapper);
+            break;
+          case eSensor::MONOCULAR:
+          case eSensor::IMU_MONOCULAR:
+            this->TrackMonocular(framewrapper);
+            break;
+          case eSensor::RGBD:
+          case eSensor::IMU_RGBD:
+            this->TrackRGBD(framewrapper);
+            break;
+        }
         auto p2 = std::chrono::high_resolution_clock::now();
         auto coms = std::chrono::duration_cast<
                 std::chrono::milliseconds>(p2 - p1).count();
@@ -395,7 +402,6 @@ std::future<Sophus::SE3f> System::TrackStereoAsync(
     mthreadPool->CreatThread(2);
     CreateTrackFrameThread();
   }
-
   {
     std::lock_guard<std::mutex> lck(mQueueMutex);
     mFrameQueue[timestamp] = nullptr;
@@ -490,6 +496,83 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
     return Tcw;
 }
 
+std::future<Sophus::SE3f> System::TrackRGBDAsync(
+        const cv::Mat &imLeft, const cv::Mat &depthmap, const double &timestamp,
+        const std::vector<IMU::Point>& vImuMeas, const std::string &filename) {
+  if (mSensor != RGBD  && mSensor != IMU_RGBD) {
+    std::cerr << "ERROR: you called TrackRGBD "
+                 "but input sensor was not set to RGBD." << std::endl;
+    exit(-1);
+  }
+  if (mthreadPool == nullptr) {
+    mthreadPool = std::make_shared<hobot::CThreadPool>();
+    mthreadPool->CreatThread(2);
+    CreateTrackFrameThread();
+  }
+  {
+    std::lock_guard<std::mutex> lck(mQueueMutex);
+    mFrameQueue[timestamp] = nullptr;
+  }
+  auto pose_promise = std::make_shared<std::promise<Sophus::SE3f>>();
+  mthreadPool->PostTask(std::bind(&System::CreateFrameAndPush, this,
+                                  imLeft, depthmap, timestamp, filename, vImuMeas, pose_promise));
+  return pose_promise->get_future();
+}
+
+Sophus::SE3f System::TrackRGBD(shared_ptr<FrameWrapper> framewrapper) {
+  if (mSensor != RGBD  && mSensor != IMU_RGBD) {
+    std::cerr << "ERROR: you called TrackRGBD "
+                 "but input sensor was not set to RGBD." << std::endl;
+    exit(-1);
+  }
+  // Check mode change
+  {
+    unique_lock<mutex> lock(mMutexMode);
+    if (mbActivateLocalizationMode) {
+      mpLocalMapper->RequestStop();
+      // Wait until Local Mapping has effectively stopped
+      while (!mpLocalMapper->isStopped()) {
+        usleep(1000);
+      }
+      mpTracker->InformOnlyTracking(true);
+      mbActivateLocalizationMode = false;
+    }
+    if (mbDeactivateLocalizationMode) {
+      mpTracker->InformOnlyTracking(false);
+      mpLocalMapper->Release();
+      mbDeactivateLocalizationMode = false;
+    }
+  }
+
+  // Check reset
+  {
+    unique_lock<mutex> lock(mMutexReset);
+    if (mbReset) {
+      mpTracker->Reset();
+      mbReset = false;
+      mbResetActiveMap = false;
+    } else if (mbResetActiveMap) {
+      mpTracker->ResetActiveMap();
+      mbResetActiveMap = false;
+    }
+  }
+  if (mSensor == System::IMU_RGBD) {
+    for(size_t i_imu = 0; i_imu < framewrapper->mImuMeas.size(); i_imu++) {
+      mpTracker->GrabImuData(framewrapper->mImuMeas[i_imu]);
+    }
+  }
+  Sophus::SE3f Tcw = mpTracker->GrabImageRGBD(*framewrapper->mFrame);
+
+  unique_lock<mutex> lock2(mMutexState);
+  mTrackingState = mpTracker->mState;
+  mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+  mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+  framewrapper->mPosePromise->set_value(Tcw);
+
+  return Tcw;
+}
+
 Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const double &timestamp, const vector<IMU::Point>& vImuMeas, string filename)
 {
     if(mSensor!=RGBD  && mSensor!=IMU_RGBD)
@@ -577,11 +660,95 @@ void print_fps() {
   }
 }
 
+std::future<Sophus::SE3f> System::TrackMonocularAsync(
+        const cv::Mat &im, const double &timestamp,
+        const std::vector<IMU::Point>& vImuMeas, const std::string &filename) {
+  if (mSensor != MONOCULAR && mSensor != IMU_MONOCULAR) {
+    std::cerr << "ERROR: you called TrackMonocularAsync "
+            "but input sensor was not set to Monocular nor Monocular-Inertial." << std::endl;
+    exit(-1);
+  }
+  if (mthreadPool == nullptr) {
+    mthreadPool = std::make_shared<hobot::CThreadPool>();
+    mthreadPool->CreatThread(2);
+    CreateTrackFrameThread();
+  }
+  {
+    std::lock_guard<std::mutex> lck(mQueueMutex);
+    mFrameQueue[timestamp] = nullptr;
+  }
+  auto pose_promise = std::make_shared<std::promise<Sophus::SE3f>>();
+  mthreadPool->PostTask(std::bind(&System::CreateFrameAndPush, this,
+                                  im, cv::Mat(), timestamp, filename, vImuMeas, pose_promise));
+  return pose_promise->get_future();
+}
+
+Sophus::SE3f System::TrackMonocular(std::shared_ptr<FrameWrapper> framewrapper) {
+  {
+    unique_lock<mutex> lock(mMutexReset);
+    if (mbShutDown)
+      return Sophus::SE3f();
+  }
+  if (mSensor != MONOCULAR && mSensor != IMU_MONOCULAR) {
+    std::cerr << "ERROR: you called TrackMonocular "
+                 "but input sensor was not set "
+                 "to Monocular nor Monocular-Inertial." << std::endl;
+    exit(-1);
+  }
+  // Check mode change
+  {
+    unique_lock<mutex> lock(mMutexMode);
+    if (mbActivateLocalizationMode) {
+      mpLocalMapper->RequestStop();
+      // Wait until Local Mapping has effectively stopped
+      while (!mpLocalMapper->isStopped()) {
+        usleep(1000);
+      }
+      mpTracker->InformOnlyTracking(true);
+      mbActivateLocalizationMode = false;
+    }
+    if (mbDeactivateLocalizationMode) {
+      mpTracker->InformOnlyTracking(false);
+      mpLocalMapper->Release();
+      mbDeactivateLocalizationMode = false;
+    }
+  }
+  // Check reset
+  {
+    unique_lock<mutex> lock(mMutexReset);
+    if (mbReset) {
+      mpTracker->Reset();
+      mbReset = false;
+      mbResetActiveMap = false;
+    } else if(mbResetActiveMap) {
+      std::cout << "SYSTEM-> Reseting active map in monocular case" << std::endl;
+      mpTracker->ResetActiveMap();
+      mbResetActiveMap = false;
+    }
+  }
+
+  if (mSensor == System::IMU_MONOCULAR) {
+    for (size_t i_imu = 0; i_imu < framewrapper->mImuMeas.size(); i_imu++) {
+      mpTracker->GrabImuData(framewrapper->mImuMeas[i_imu]);
+    }
+  }
+  Sophus::SE3f Tcw = mpTracker->GrabImageMonocular(*framewrapper->mFrame);
+
+  unique_lock<mutex> lock2(mMutexState);
+  mTrackingState = mpTracker->mState;
+  mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
+  mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
+
+  framewrapper->mPosePromise->set_value(Tcw);
+
+  return Tcw;
+}
+
 Sophus::SE3f System::TrackMonocular(const cv::Mat &im,
         const double &timestamp,
         const vector<IMU::Point>& vImuMeas,
         string filename) {
-  print_fps();
+  //print_fps();
     {
         unique_lock<mutex> lock(mMutexReset);
         if(mbShutDown)
