@@ -33,7 +33,9 @@
 #include "librealsense2/rsutil.h"
 
 #include <System.h>
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 bool b_continue_session;
@@ -104,7 +106,9 @@ int main(int argc, char **argv) {
     if (argc == 4) {
         file_name = string(argv[argc - 1]);
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;

@@ -14,7 +14,8 @@ namespace ORB_SLAM3
 SuperPointextractor::SuperPointextractor(
         int nfeatures, float scaleFactor, int nlevels, int iniThFAST, int minThFAST)
         : ORBextractor(nfeatures, scaleFactor, nlevels, iniThFAST, minThFAST) {
-          node_ = std::make_shared<SuperPointNode>("superpoint");
+          static std::atomic_int num{0};
+          node_ = std::make_shared<SuperPointNode>("superpoint" + std::to_string(num++));
           threadpool_ = std::make_shared<hobot::CThreadPool>();
           threadpool_->CreatThread(3);
 }

@@ -25,7 +25,9 @@
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 void LoadImages(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
@@ -39,7 +41,9 @@ int main(int argc, char **argv)
 
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     const int num_seq = (argc-3)/2;
     cout << "num_seq = " << num_seq << endl;
     bool bFileName= (((argc-3) % 2) == 1);

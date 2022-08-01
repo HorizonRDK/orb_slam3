@@ -475,6 +475,15 @@ install(TARGETS ${PROJECT_NAME} DBoW3 g2o
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin/${PROJECT_NAME}
         )
+install(DIRECTORY Examples
+        DESTINATION share/${PROJECT_NAME}
+        )
+install(DIRECTORY config
+        DESTINATION share/${PROJECT_NAME}
+        )
+install(DIRECTORY Vocabulary
+        DESTINATION share/${PROJECT_NAME}
+        )
 ament_export_libraries(${PROJECT_NAME} DBoW3 g2o)
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})

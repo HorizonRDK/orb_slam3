@@ -257,6 +257,22 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     Verbose::SetTh(Verbose::VERBOSITY_DEBUG);
 }
 
+void print_fps() {
+  static int count = 0;
+  static std::chrono::high_resolution_clock::time_point last_time =
+          std::chrono::high_resolution_clock::now();
+  auto current_time = std::chrono::high_resolution_clock::now();
+  count++;
+  auto duration_ms = std::chrono::duration_cast<
+          std::chrono::milliseconds>(current_time - last_time).count();
+  if (duration_ms > 1000) {
+    int fps = std::round(count * 1000.0 / duration_ms);
+    std::cout << "fps: " << fps << std::endl;
+    last_time = current_time;
+    count = 0;
+  }
+}
+
 void System::CreateFrameAndPush(const cv::Mat &imLeft, const cv::Mat &imRight,
         const double &timestamp, const std::string &filename,
         const std::vector<IMU::Point> &ImuMeas,
@@ -419,7 +435,7 @@ Sophus::SE3f System::TrackStereo(const cv::Mat &imLeft, const cv::Mat &imRight, 
         cerr << "ERROR: you called TrackStereo but input sensor was not set to Stereo nor Stereo-Inertial." << endl;
         exit(-1);
     }
-
+    print_fps();
     cv::Mat imLeftToFeed, imRightToFeed;
     if(settings_ && settings_->needToRectify()){
         cv::Mat M1l = settings_->M1l();
@@ -580,7 +596,7 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
         cerr << "ERROR: you called TrackRGBD but input sensor was not set to RGBD." << endl;
         exit(-1);
     }
-
+    print_fps();
     cv::Mat imToFeed = im.clone();
     cv::Mat imDepthToFeed = depthmap.clone();
     if(settings_ && settings_->needToResize()){
@@ -642,22 +658,6 @@ Sophus::SE3f System::TrackRGBD(const cv::Mat &im, const cv::Mat &depthmap, const
     mTrackedMapPoints = mpTracker->mCurrentFrame.mvpMapPoints;
     mTrackedKeyPointsUn = mpTracker->mCurrentFrame.mvKeysUn;
     return Tcw;
-}
-
-void print_fps() {
-  static int count = 0;
-  static std::chrono::high_resolution_clock::time_point last_time =
-          std::chrono::high_resolution_clock::now();
-  auto current_time = std::chrono::high_resolution_clock::now();
-  count++;
-  auto duration_ms = std::chrono::duration_cast<
-          std::chrono::milliseconds>(current_time - last_time).count();
-  if (duration_ms > 1000) {
-    int fps = std::round(count * 1000 / duration_ms);
-    std::cout << "fps: " << fps << std::endl;
-    last_time = current_time;
-    count = 0;
-  }
 }
 
 std::future<Sophus::SE3f> System::TrackMonocularAsync(
@@ -748,7 +748,6 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im,
         const double &timestamp,
         const vector<IMU::Point>& vImuMeas,
         string filename) {
-  //print_fps();
     {
         unique_lock<mutex> lock(mMutexReset);
         if(mbShutDown)
@@ -761,7 +760,7 @@ Sophus::SE3f System::TrackMonocular(const cv::Mat &im,
                 "but input sensor was not set to Monocular nor Monocular-Inertial." << endl;
         exit(-1);
     }
-
+    print_fps();
     cv::Mat imToFeed = im.clone();
     if(settings_ && settings_->needToResize()){
         cv::Mat resizedIm;

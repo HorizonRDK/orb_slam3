@@ -20,12 +20,19 @@
 #include<algorithm>
 #include<fstream>
 #include<chrono>
-
+#include <csignal>
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
 
 using namespace std;
+
+bool b_continue_session;
+
+void exit_loop_handler(int s) {
+  cout << "Finishing session" << endl;
+  b_continue_session = false;
+}
 
 void LoadImages(const string &strImagePath, const string &strPathTimes,
                 vector<string> &vstrImages, vector<double> &vTimeStamps);
@@ -62,6 +69,13 @@ int main(int argc, char **argv)
     vstrImageFilenames.resize(num_seq);
     vTimestampsCam.resize(num_seq);
     nImages.resize(num_seq);
+
+    struct sigaction sigIntHandler{};
+    sigIntHandler.sa_handler = exit_loop_handler;
+    sigemptyset(&sigIntHandler.sa_mask);
+    sigIntHandler.sa_flags = 0;
+    sigaction(SIGINT, &sigIntHandler, nullptr);
+    b_continue_session = true;
 
     int tot_images = 0;
     for (seq = 0; seq<num_seq; seq++)
@@ -100,6 +114,9 @@ int main(int argc, char **argv)
         int proccIm = 0;
         for(int ni=0; ni<nImages[seq]; ni++, proccIm++)
         {
+          if (!b_continue_session) {
+            break;
+          }
 
             // Read image from file
             im = cv::imread(vstrImageFilenames[seq][ni],cv::IMREAD_UNCHANGED); //,CV_LOAD_IMAGE_UNCHANGED);
@@ -143,8 +160,9 @@ int main(int argc, char **argv)
 
             // Pass the image to the SLAM system
             // cout << "tframe = " << tframe << endl;
-            SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
-
+            //  SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
+            SLAM.TrackMonocularAsync(im, tframe,
+                    std::vector<ORB_SLAM3::IMU::Point>(), "");
     #ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     #else

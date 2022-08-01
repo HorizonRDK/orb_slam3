@@ -34,7 +34,9 @@
 
 
 #include <System.h>
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 bool b_continue_session;
@@ -114,7 +116,9 @@ int main(int argc, char **argv) {
         file_name = string(argv[argc - 1]);
         bFileName = true;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     struct sigaction sigIntHandler;
 
     sigIntHandler.sa_handler = exit_loop_handler;

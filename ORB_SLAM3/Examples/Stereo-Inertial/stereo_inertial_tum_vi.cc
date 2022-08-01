@@ -27,7 +27,9 @@
 
 #include<System.h>
 #include "ImuTypes.h"
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 void LoadImagesTUMVI(const string &strPathLeft, const string &strPathRight, const string &strPathTimes,
@@ -50,7 +52,9 @@ int main(int argc, char **argv)
         cerr << endl << "Usage: ./stereo_inertial_tum_vi path_to_vocabulary path_to_settings path_to_image_folder_1 path_to_image_folder_2 path_to_times_file path_to_imu_data (trajectory_file_name)" << endl;
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
 
     // Load all sequences:
     int seq;

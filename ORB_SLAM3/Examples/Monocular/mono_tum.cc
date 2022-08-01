@@ -24,7 +24,9 @@
 #include<opencv2/core/core.hpp>
 
 #include<System.h>
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 void LoadImages(const string &strFile, vector<string> &vstrImageFilenames,
@@ -37,7 +39,9 @@ int main(int argc, char **argv)
         cerr << endl << "Usage: ./mono_tum path_to_vocabulary path_to_settings path_to_sequence" << endl;
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     // Retrieve paths to images
     vector<string> vstrImageFilenames;
     vector<double> vTimestamps;

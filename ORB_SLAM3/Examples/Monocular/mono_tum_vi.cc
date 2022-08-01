@@ -27,7 +27,9 @@
 
 #include"System.h"
 #include "Converter.h"
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 void LoadImages(const string &strImagePath, const string &strPathTimes,
@@ -53,7 +55,9 @@ int main(int argc, char **argv)
         cerr << endl << "Usage: ./mono_tum_vi path_to_vocabulary path_to_settings path_to_image_folder_1 path_to_times_file_1 (path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) (trajectory_file_name)" << endl;
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     // Load all sequences:
     int seq;
     vector< vector<string> > vstrImageFilenames;
