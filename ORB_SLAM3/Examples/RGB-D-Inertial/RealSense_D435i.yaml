@@ -5,7 +5,7 @@
 #--------------------------------------------------------------------------------------------
 File.version: "1.0"
 
-Camera.type: "PinHole"
+Camera.type: "Rectified"
 
 # Right Camera calibration and distortion parameters (OpenCV)
 Camera1.fx: 617.201
@@ -74,7 +74,8 @@ ORBextractor.nLevels: 8
 # You can lower these values if your images have low contrast			
 ORBextractor.iniThFAST: 20
 ORBextractor.minThFAST: 7
-
+#ORBextractor.type: "SUPERPOINT"
+ORBextractor.type: "ORB"
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------

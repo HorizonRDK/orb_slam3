@@ -32,7 +32,9 @@
 #include <System.h>
 #include <condition_variable>
 #include "ImuTypes.h"
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 bool b_continue_session;
@@ -57,7 +59,9 @@ int main(int argc, char **argv)
              << endl;
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     string file_name;
     bool bFileName = false;
 

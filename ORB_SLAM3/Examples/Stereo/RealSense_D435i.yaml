@@ -53,8 +53,9 @@ ORBextractor.nLevels: 3
 # You can lower these values if your images have low contrast			
 ORBextractor.iniThFAST: 15
 ORBextractor.minThFAST: 7
+#ORBextractor.type: "SUPERPOINT"
+ORBextractor.type: "ORB"
 
-ORBextractor.type: "SUPERPOINT"
 #--------------------------------------------------------------------------------------------
 # Viewer Parameters
 #--------------------------------------------------------------------------------------------
