@@ -51,7 +51,7 @@ public:
 
         path_publisher_=node_->create_publisher<nav_msgs::msg::Path>("camera_path",10);
         pointcloud2_publisher_=node_->create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2",10);
-        frame_publisher_=node_->create_publisher<sensor_msgs::msg::Image>("current_frame",10);
+        frame_publisher_=node_->create_publisher<sensor_msgs::msg::Image>("keypoint_render_frame",10);
     }
 
     void GrabRGBD(const sensor_msgs::msg::Image::ConstSharedPtr msgRGB,const sensor_msgs::msg::Image::ConstSharedPtr msgD);

@@ -155,7 +155,7 @@ cv::Mat FrameDrawer::DrawFrame(float imageScale)
         int n = vCurrentKeys.size();
         for(int i=0;i<n;i++)
         {
-            if(vbVO[i] || vbMap[i] || true)
+            if(vbVO[i] || vbMap[i])
             {
                 cv::Point2f pt1,pt2;
                 cv::Point2f point;
@@ -280,7 +280,7 @@ cv::Mat FrameDrawer::DrawRightFrame(float imageScale)
 
         for(int i=0;i<n;i++)
         {
-            if(vbVO[i + Nleft] || vbMap[i + Nleft] || true)
+            if(vbVO[i + Nleft] || vbMap[i + Nleft])
             {
                 cv::Point2f pt1,pt2;
                 cv::Point2f point;
