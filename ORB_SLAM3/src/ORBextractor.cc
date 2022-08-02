@@ -128,8 +128,8 @@ void ORBextractor::computeOrbDescriptor(const KeyPoint& kpt,
       int result_x = std::round(kpt.pt.x + r2);
       if (result_x < 0 || result_y < 0
        || result_x >= img.cols || result_y >= img.rows) {
-        printf("x: %f, y: %f, r1: %f, r2: %f. result_x: %d, result_y: %d\n",
-                kpt.pt.x, kpt.pt.y, r1, r2, result_x, result_y);
+        //  printf("x: %f, y: %f, r1: %f, r2: %f. result_x: %d, result_y: %d\n",
+        //        kpt.pt.x, kpt.pt.y, r1, r2, result_x, result_y);
       }
       auto index = (int)std::round(r1) * step + (int)std::round(r2);
 //      if (index < 0) {

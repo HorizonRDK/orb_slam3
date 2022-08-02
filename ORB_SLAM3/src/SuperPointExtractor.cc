@@ -3,7 +3,7 @@
 //
 
 #include "SuperPointExtractor.h"
-#include "util/output_parser/utils.h"
+#include "dnn_node/util/output_parser/utils.h"
 #include <fstream>
 #include <atomic>
 #include <opencv2/imgproc.hpp>
@@ -348,7 +348,7 @@ int SuperPointNode::Predict(
 }
 
 int32_t SuperPointOutputParser::Parse(
-        std::shared_ptr<DNNResult>& output,
+        std::shared_ptr<SuperPointResult>& output,
         std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
         std::shared_ptr<OutputDescription>& output_description,
         std::shared_ptr<DNNTensor>& output_tensor) {

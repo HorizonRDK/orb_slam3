@@ -200,9 +200,25 @@ private:
   friend class SuperPointextractor;
 };
 
-struct SuperPointAssistParser : public SingleBranchOutputParser {};
+struct SuperPointResult : public DNNResult {
+public:
+  void Reset() override {
+    keypoints_.clear();
+  }
 
-struct SuperPointOutputParser : public SingleBranchOutputParser {
+  cv::Mat descriptors_;
+  std::vector<cv::KeyPoint> keypoints_;
+};
+
+struct SuperPointAssistParser : public SingleBranchOutputParser<SuperPointResult> {
+  int32_t Parse(
+          std::shared_ptr<SuperPointResult>& output,
+          std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
+          std::shared_ptr<OutputDescription>& output_description,
+          std::shared_ptr<DNNTensor>& output_tensor) { return -1; }
+};
+
+struct SuperPointOutputParser : public SingleBranchOutputParser<SuperPointResult> {
 public:
   SuperPointOutputParser(const std::string &config_file) {
     //  yaml_file_ = config_file + "/centernet.yaml";
@@ -216,7 +232,7 @@ public:
 //          std::vector<std::shared_ptr<DNNTensor>> &depend_output_tensors,
 //          std::vector<std::shared_ptr<DNNResult>> &depend_outputs) override;
   int32_t Parse(
-          std::shared_ptr<DNNResult>& output,
+          std::shared_ptr<SuperPointResult>& output,
           std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
           std::shared_ptr<OutputDescription>& output_description,
           std::shared_ptr<DNNTensor>& output_tensor);
@@ -246,15 +262,6 @@ private:
   void GetHeatMap(float *data, float *out);
 };
 
-struct SuperPointResult : public DNNResult {
-public:
-  void Reset() override {
-    keypoints_.clear();
-  }
-
-  cv::Mat descriptors_;
-  std::vector<cv::KeyPoint> keypoints_;
-};
 
 class SuperPointextractor : public ORBextractor {
 public:
