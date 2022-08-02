@@ -228,7 +228,7 @@ void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img) 
         // Load imu measurements from buffer
         vImuMeas.clear();
         while(!mpImuGb_->imu_buffer_.empty() &&
-              rclcpp::Time(mpImuGb_->imu_buffer_.front()->header.stamp).seconds() <= tImLeft) {
+              rclcpp::Time(mpImuGb_->imu_buffer_.front()->header.stamp).seconds() <= tIm) {
 
             double t = rclcpp::Time(mpImuGb_->imu_buffer_.front()->header.stamp).seconds();
             cv::Point3f acc(mpImuGb_->imu_buffer_.front()->linear_acceleration.x,
