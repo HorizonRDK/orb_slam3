@@ -36,26 +36,30 @@
 
 #include "orb_slam3/System.h"
 
-class ImuGrabber
-{
+class ImuGrabber {
 public:
     ImuGrabber(){};
     void GrabImu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg);
 
-    queue<sensor_msgs::msg::Imu::ConstSharedPtr> imu_buffer_;
+    std::queue<sensor_msgs::msg::Imu::ConstSharedPtr> imu_buffer_;
     std::mutex imu_mutex_;
 };
 
-class ImageGrabber
-{
+class ImageGrabber {
 public:
-    ImageGrabber(ORB_SLAM3::System* pSLAM, ImuGrabber *pImuGb, const bool bClahe): mpSLAM_(pSLAM), mpImuGb_(pImuGb), mbClahe_(bClahe)
-    {
+    ImageGrabber(ORB_SLAM3::System* pSLAM, ImuGrabber *pImuGb, const bool bClahe):
+                               mpSLAM_(pSLAM), mpImuGb_(pImuGb), mbClahe_(bClahe) {
         node_=rclcpp::Node::make_shared("ros2_mono_inertial");
+
+        node_->declare_parameter<std::string>("subscribe_image_topic","/camera/infra1/image_rect_raw");
+        node_->get_parameter("subscribe_image_topic", image_topic_);
+
+        node_->declare_parameter<std::string>("subscribe_imu_topic","/camera/imu");
+        node_->get_parameter("subscribe_imu_topic", imu_topic_);
 
         path_publisher_=node_->create_publisher<nav_msgs::msg::Path>("camera_path",10);
         pointcloud2_publisher_=node_->create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2",10);
-        frame_publisher_=node_->create_publisher<sensor_msgs::msg::Image>("frame",10);
+        frame_publisher_=node_->create_publisher<sensor_msgs::msg::Image>("current_frame",10);
 
     }
 
@@ -77,20 +81,23 @@ public:
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr frame_publisher_;
 
+    std::string image_topic_;
+    std::string imu_topic_;
+
 private:
     sensor_msgs::msg::PointCloud2 MapPointsToPointCloud (std::vector<ORB_SLAM3::MapPoint*> map_points);
     tf2::Transform TransformFromMat (cv::Mat position_mat);
 
     //显示相关成员变量
-    queue<Sophus::SE3f> pose_buffer_;
+    std::queue<Sophus::SE3f> pose_buffer_;
     std::mutex pose_mutex_;
     std::condition_variable pose_cv_;
 
-    queue<cv::Mat> image_buffer_;
+    std::queue<bool> image_buffer_;
     std::mutex image_mutex_;
     std::condition_variable image_cv_;
 
-    queue<std::vector<ORB_SLAM3::MapPoint*>> point_buffer_;
+    std::queue<std::vector<ORB_SLAM3::MapPoint*>> point_buffer_;
     std::mutex point_mutex_;
     std::condition_variable point_cv_;
 };
@@ -132,10 +139,8 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud (std::vector<O
     unsigned char *cloud_data_ptr = &(cloud.data[0]);
 
     float data_array[num_channels];
-    for (unsigned int i=0; i<cloud.width; i++)
-    {
-        if (map_points.at(i)->nObs >= 2)
-        {
+    for (unsigned int i=0; i<cloud.width; i++) {
+        if (map_points.at(i)->nObs >= 2) {
             point= Rcw*map_points.at(i)->GetWorldPos();
 
             data_array[0] = (float)point(0);
@@ -158,8 +163,7 @@ tf2::Transform ImageGrabber::TransformFromMat (cv::Mat position_mat) {
 
     tf2::Matrix3x3 tf_camera_rotation (rotation.at<float> (0,0), rotation.at<float> (0,1), rotation.at<float> (0,2),
                                        rotation.at<float> (1,0), rotation.at<float> (1,1), rotation.at<float> (1,2),
-                                       rotation.at<float> (2,0), rotation.at<float> (2,1), rotation.at<float> (2,2)
-    );
+                                       rotation.at<float> (2,0), rotation.at<float> (2,1), rotation.at<float> (2,2));
 
     tf2::Vector3 tf_camera_translation (translation.at<float> (0), translation.at<float> (1), translation.at<float> (2));
 
@@ -184,20 +188,18 @@ tf2::Transform ImageGrabber::TransformFromMat (cv::Mat position_mat) {
 }
 
 
-void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img)
-{
-  // Copy the ros image message to cv::Mat.
+void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img) {
+    if(mpImuGb_->imu_buffer_.empty())
+        return;
+
     cv::Mat im;
     double tIm=rclcpp::Time(img->header.stamp).seconds();
 
     cv_bridge::CvImageConstPtr cv_ptr;
-    try
-    {
+    try {
         cv_ptr = cv_bridge::toCvShare(img);
     }
-    catch (cv_bridge::Exception& e)
-    {
-        //RCLCPP_ERROR("cv_bridge exception: %s", e.what());
+    catch (cv_bridge::Exception& e) {
         return;
     }
     im=cv_ptr->image;
@@ -207,27 +209,28 @@ void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img)
 
     vector<ORB_SLAM3::IMU::Point> vImuMeas;
     mpImuGb_->imu_mutex_.lock();
-    if(!mpImuGb_->imu_buffer_.empty())
-    {
+    if(!mpImuGb_->imu_buffer_.empty()) {
         // Load imu measurements from buffer
         vImuMeas.clear();
-        while(!mpImuGb_->imu_buffer_.empty() && rclcpp::Time(mpImuGb_->imu_buffer_.front()->header.stamp).seconds()<=tIm)
-        {
+        while(!mpImuGb_->imu_buffer_.empty() && rclcpp::Time(mpImuGb_->imu_buffer_.front()->header.stamp).seconds()<=tIm) {
             double t = rclcpp::Time(mpImuGb_->imu_buffer_.front()->header.stamp).seconds();
-            cv::Point3f acc(mpImuGb_->imu_buffer_.front()->linear_acceleration.x, mpImuGb_->imu_buffer_.front()->linear_acceleration.y, mpImuGb_->imu_buffer_.front()->linear_acceleration.z);
-            cv::Point3f gyr(mpImuGb_->imu_buffer_.front()->angular_velocity.x, mpImuGb_->imu_buffer_.front()->angular_velocity.y, mpImuGb_->imu_buffer_.front()->angular_velocity.z);
+            cv::Point3f acc(mpImuGb_->imu_buffer_.front()->linear_acceleration.x,
+                            mpImuGb_->imu_buffer_.front()->linear_acceleration.y,
+                            mpImuGb_->imu_buffer_.front()->linear_acceleration.z);
+            cv::Point3f gyr(mpImuGb_->imu_buffer_.front()->angular_velocity.x,
+                            mpImuGb_->imu_buffer_.front()->angular_velocity.y,
+                            mpImuGb_->imu_buffer_.front()->angular_velocity.z);
             vImuMeas.push_back(ORB_SLAM3::IMU::Point(acc,gyr,t));
             mpImuGb_->imu_buffer_.pop();
         }
     }
     mpImuGb_->imu_mutex_.unlock();
 
-    if(mbClahe_)
-    {
+    if(mbClahe_) {
         mClahe_->apply(im,im);
     }
 
-    Sophus::SE3f Tcw_SE3F = mpSLAM_->TrackMonocular(im,tIm,vImuMeas);
+    Sophus::SE3f Tcw_SE3F = mpSLAM_->TrackMonocular(im, tIm, vImuMeas);
 
     std::unique_lock<std::mutex> locker_pose(pose_mutex_);
     pose_buffer_.push(Tcw_SE3F);
@@ -235,7 +238,7 @@ void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img)
     pose_cv_.notify_one();
 
     std::unique_lock<std::mutex> locker_image(image_mutex_);
-    image_buffer_.push(mpSLAM_->GetmpFrameDrawe()->DrawFrame(1.0f));
+    image_buffer_.push(true);
     locker_image.unlock();
     image_cv_.notify_one();
 
@@ -246,16 +249,14 @@ void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img)
 }
 
 
-void ImuGrabber::GrabImu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg)
-{
+void ImuGrabber::GrabImu(const sensor_msgs::msg::Imu::ConstSharedPtr imu_msg) {
     imu_mutex_.lock();
     imu_buffer_.push(imu_msg);
     imu_mutex_.unlock();
     return;
 }
 
-void ImageGrabber::PubPose()
-{
+void ImageGrabber::PubPose() {
     Eigen::Matrix4f Tcw_Matrix;
     cv::Mat Tcw;
     geometry_msgs::msg::TransformStamped tf_msg;
@@ -263,8 +264,7 @@ void ImageGrabber::PubPose()
 
     tf2_ros::TransformBroadcaster tf_broadcaster(node_);
 
-    while (rclcpp::ok())
-    {
+    while (rclcpp::ok()) {
         std::unique_lock<std::mutex> locker_pose(pose_mutex_);
         while(pose_buffer_.empty())
             pose_cv_.wait(locker_pose);
@@ -294,34 +294,35 @@ void ImageGrabber::PubPose()
         path_.header = tf_msg.header;
         path_.poses.push_back(pose_msg);
         path_publisher_->publish(path_);
-
     }
 }
 
-void ImageGrabber::PubImage()
-{
+void ImageGrabber::PubImage() {
     sensor_msgs::msg::Image img_msg;
     cv_bridge::CvImage img_bridge;
     cv::Mat toshow;
     std_msgs::msg::Header header;
+    bool received_image;
 
-    while (rclcpp::ok())
-    {
+    while (rclcpp::ok()) {
+
         std::unique_lock<std::mutex> locker_image(image_mutex_);
         while (image_buffer_.empty())
             pose_cv_.wait(locker_image);
-        toshow = image_buffer_.front();
+        received_image = image_buffer_.front();
         image_buffer_.pop();
         locker_image.unlock();
 
-        img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
-        img_bridge.toImageMsg(img_msg);
-        frame_publisher_->publish(img_msg);
+        if(received_image) {
+            toshow = mpSLAM_->GetmpFrameDrawe()->DrawFrame(1.0f);
+            img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
+            img_bridge.toImageMsg(img_msg);
+            frame_publisher_->publish(img_msg);
+        }
     }
 }
 
-void ImageGrabber::PubPointCloud()
-{
+void ImageGrabber::PubPointCloud(){
     std::vector<ORB_SLAM3::MapPoint *> orb_point;
     while (rclcpp::ok()) {
         std::unique_lock<std::mutex> locker_point(point_mutex_);
@@ -337,19 +338,16 @@ void ImageGrabber::PubPointCloud()
 }
 
 
-int main(int argc, char **argv)
-{
+int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
     bool bEqual = false;
-    if(argc < 3 || argc > 4)
-    {
+    if(argc < 3) {
         cerr << endl << "Usage: ros2 run orb_slam3_example_ros2 mono_inertial path_to_vocabulary path_to_settings [do_equalize]" << endl;
         rclcpp::shutdown();
         return 1;
     }
 
-    if(argc==4)
-    {
+    if(argc==4) {
         std::string sbEqual(argv[3]);
         if(sbEqual == "true")
             bEqual = true;
@@ -359,13 +357,15 @@ int main(int argc, char **argv)
     ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::IMU_MONOCULAR,false);
 
     ImuGrabber imugb;
-    ImageGrabber igb(&SLAM,&imugb,bEqual); //
+    ImageGrabber igb(&SLAM,&imugb,bEqual);
 
     rclcpp::Subscription<sensor_msgs::msg::Imu>::SharedPtr sub_imu =
-            igb.node_->create_subscription<sensor_msgs::msg::Imu>("/camera/imu",200,std::bind(&ImuGrabber::GrabImu,&imugb,std::placeholders::_1));
+            igb.node_->create_subscription<sensor_msgs::msg::Imu>(igb.imu_topic_,200,
+                                                                  std::bind(&ImuGrabber::GrabImu,&imugb,std::placeholders::_1));
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img0 =
-            igb.node_->create_subscription<sensor_msgs::msg::Image>("/camera/infra1/image_rect_raw",10,std::bind(&ImageGrabber::GrabImage,&igb,std::placeholders::_1));
+            igb.node_->create_subscription<sensor_msgs::msg::Image>(igb.image_topic_, 10,
+                                                                    std::bind(&ImageGrabber::GrabImage,&igb,std::placeholders::_1));
 
     std::thread pub_image_thread(&ImageGrabber::PubImage, &igb);
     std::thread pub_pose_thread(&ImageGrabber::PubPose, &igb);
