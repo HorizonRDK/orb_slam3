@@ -40,14 +40,18 @@ class ImageGrabber
 {
 public:
     explicit ImageGrabber(ORB_SLAM3::System* pSLAM):mpSLAM_(pSLAM) {
-        node_=rclcpp::Node::make_shared("ros2_mono");
+        node_ = rclcpp::Node::make_shared("ros2_mono");
 
-        node_->declare_parameter<std::string>("subscribe_image_topic","/camera/infra1/image_rect_raw");
+        node_->declare_parameter<std::string>("subscribe_image_topic",
+                                              "/camera/infra1/image_rect_raw");
         node_->get_parameter("subscribe_image_topic", image_topic_);
 
-        path_publisher_=node_->create_publisher<nav_msgs::msg::Path>("camera_path",10);
-        pointcloud2_publisher_=node_->create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2",10);
-        frame_publisher_=node_->create_publisher<sensor_msgs::msg::Image>("keypoint_render_frame",10);
+        path_publisher_ = node_->
+                create_publisher<nav_msgs::msg::Path>("camera_path", 10);
+        pointcloud2_publisher_ = node_->
+                create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2", 10);
+        frame_publisher_ = node_->
+                create_publisher<sensor_msgs::msg::Image>("keypoint_render_frame", 10);
     }
 
     void GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr msg);
@@ -67,7 +71,8 @@ public:
     std::string image_topic_;
 
 private:
-    sensor_msgs::msg::PointCloud2 MapPointsToPointCloud (std::vector<ORB_SLAM3::MapPoint*> map_points);
+    sensor_msgs::msg::PointCloud2 MapPointsToPointCloud (
+            std::vector<ORB_SLAM3::MapPoint*> map_points);
     tf2::Transform TransformFromMat (cv::Mat position_mat);
 
     //显示相关成员变量
@@ -86,13 +91,21 @@ private:
 };
 
 
-sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud (std::vector<ORB_SLAM3::MapPoint*> map_points) {
+sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud(
+        std::vector<ORB_SLAM3::MapPoint*> map_points) {
 
     sensor_msgs::msg::PointCloud2 cloud;
 
+    Eigen::Matrix3f Rcw;
+    Rcw << 0, 1, 0,
+          -1, 0, 0,
+           0, 0, 1;
+
+    Eigen::Vector3f point;
+
     const int num_channels = 3; // x y z
 
-    cloud.header.stamp = node_->get_clock()->now();
+    cloud.header.stamp = node_->get_clock()->now();;
     cloud.header.frame_id = "map";
     cloud.height = 1;
     cloud.width = map_points.size();  //点的个数
@@ -103,7 +116,7 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud (std::vector<O
     cloud.fields.resize(num_channels);
 
     std::string channel_id[] = { "x", "y", "z"};
-    for (int i = 0; i<num_channels; i++) {
+    for (int i = 0; i < num_channels; i++) {
         cloud.fields[i].name = channel_id[i];
         cloud.fields[i].offset = i * sizeof(float);
         cloud.fields[i].count = 1;
@@ -115,37 +128,47 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud (std::vector<O
     unsigned char *cloud_data_ptr = &(cloud.data[0]);
 
     float data_array[num_channels];
-    for (unsigned int i=0; i<cloud.width; i++) {
+    for (unsigned int i = 0; i < cloud.width; i++) {
         if (map_points.at(i)->nObs >= 2) {
+            point = Rcw * map_points.at(i)->GetWorldPos();
 
-            data_array[0] = (float)map_points.at(i)->GetWorldPos()(2);
-            data_array[1] = (float)(-1.0* map_points.at(i)->GetWorldPos()(0));
-            data_array[2] = (float)(-1.0* map_points.at(i)->GetWorldPos()(1));
+            data_array[0] = (float)point(0);
+            data_array[1] = (float)point(1);
+            data_array[2] = (float)point(2);
 
-            memcpy(cloud_data_ptr+(i*cloud.point_step), data_array, num_channels*sizeof(float));
+            memcpy(cloud_data_ptr + (i * cloud.point_step),
+                   data_array, num_channels * sizeof(float));
         }
     }
     return cloud;
 }
 
 tf2::Transform ImageGrabber::TransformFromMat (cv::Mat position_mat) {
-    cv::Mat rotation(3,3,CV_32F);
-    cv::Mat translation(3,1,CV_32F);
+    cv::Mat rotation(3, 3, CV_32F);
+    cv::Mat translation(3, 1, CV_32F);
 
-    rotation = position_mat.rowRange(0,3).colRange(0,3);
-    translation = position_mat.rowRange(0,3).col(3);
+    rotation = position_mat.rowRange(0, 3).colRange(0, 3);
+    translation = position_mat.rowRange(0, 3).col(3);
 
 
-    tf2::Matrix3x3 tf_camera_rotation (rotation.at<float> (0,0), rotation.at<float> (0,1), rotation.at<float> (0,2),
-                                       rotation.at<float> (1,0), rotation.at<float> (1,1), rotation.at<float> (1,2),
-                                       rotation.at<float> (2,0), rotation.at<float> (2,1), rotation.at<float> (2,2));
+    tf2::Matrix3x3 tf_camera_rotation (rotation.at<float> (0, 0),
+                                       rotation.at<float> (0, 1),
+                                       rotation.at<float> (0, 2),
+                                       rotation.at<float> (1, 0),
+                                       rotation.at<float> (1, 1),
+                                       rotation.at<float> (1, 2),
+                                       rotation.at<float> (2, 0),
+                                       rotation.at<float> (2, 1),
+                                       rotation.at<float> (2, 2));
 
-    tf2::Vector3 tf_camera_translation (translation.at<float> (0), translation.at<float> (1), translation.at<float> (2));
+    tf2::Vector3 tf_camera_translation (translation.at<float> (0),
+                                        translation.at<float> (1),
+                                        translation.at<float> (2));
 
     //Coordinate transformation matrix from orb coordinate system to ros coordinate system
-    const tf2::Matrix3x3 tf_orb_to_ros (0, 0, 1,
-                                        -1, 0, 0,
-                                        0,-1, 0);
+    const tf2::Matrix3x3 tf_orb_to_ros (0, 1, 0,
+                                       -1, 0, 0,
+                                        0, 0, 1);
 
     //Transform from orb coordinate system to ros coordinate system on camera coordinates
     tf_camera_rotation = tf_orb_to_ros * tf_camera_rotation;
@@ -172,7 +195,8 @@ void ImageGrabber::GrabImage(const sensor_msgs::msg::Image::ConstSharedPtr img) 
         return;
     }
 
-    Sophus::SE3f Tcw_SE3F = mpSLAM_->TrackMonocular(cv_ptr->image,rclcpp::Time(cv_ptr->header.stamp).seconds());
+    Sophus::SE3f Tcw_SE3F = mpSLAM_->TrackMonocular(cv_ptr->image,
+                                                    rclcpp::Time(cv_ptr->header.stamp).seconds());
 
     std::unique_lock<std::mutex> locker_pose(pose_mutex_);
     pose_buffer_.push(Tcw_SE3F);
@@ -287,8 +311,8 @@ int main(int argc, char **argv) {
     ImageGrabber igb(&SLAM);
 
     rclcpp::Subscription<sensor_msgs::msg::Image>::SharedPtr sub_img0 =
-            igb.node_->create_subscription<sensor_msgs::msg::Image>(igb.image_topic_,1,
-                                                                    std::bind(&ImageGrabber::GrabImage, &igb, std::placeholders::_1));
+            igb.node_->create_subscription<sensor_msgs::msg::Image>(
+                    igb.image_topic_, 1, std::bind(&ImageGrabber::GrabImage, &igb, std::placeholders::_1));
 
     std::thread pub_image_thread(&ImageGrabber::PubImage, &igb);
     std::thread pub_pose_thread(&ImageGrabber::PubPose, &igb);
