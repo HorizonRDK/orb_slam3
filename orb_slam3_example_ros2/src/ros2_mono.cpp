@@ -158,9 +158,9 @@ tf2::Transform ImageGrabber::TransformFromMat (cv::Mat position_mat) {
                                         translation.at<float> (2));
 
     //Coordinate transformation matrix from orb coordinate system to ros coordinate system
-    const tf2::Matrix3x3 tf_orb_to_ros (0, 1, 0,
+    const tf2::Matrix3x3 tf_orb_to_ros (0, 0, 1,
                                        -1, 0, 0,
-                                        0, 0, 1);
+                                        0, -1, 0);
 
     //Transform from orb coordinate system to ros coordinate system on camera coordinates
     tf_camera_rotation = tf_orb_to_ros * tf_camera_rotation;
