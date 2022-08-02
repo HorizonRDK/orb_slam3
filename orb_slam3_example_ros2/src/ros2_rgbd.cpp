@@ -102,13 +102,6 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud(
 
     sensor_msgs::msg::PointCloud2 cloud;
 
-    Eigen::Matrix3f Rcw;
-    Rcw << 0, 1, 0,
-          -1, 0, 0,
-           0, 0, 1;
-
-    Eigen::Vector3f point;
-
     const int num_channels = 3; // x y z
 
     cloud.header.stamp = node_->get_clock()->now();;
@@ -136,11 +129,10 @@ sensor_msgs::msg::PointCloud2 ImageGrabber::MapPointsToPointCloud(
     float data_array[num_channels];
     for (unsigned int i = 0; i < cloud.width; i++) {
         if (map_points.at(i)->nObs >= 2) {
-            point = Rcw * map_points.at(i)->GetWorldPos();
 
-            data_array[0] = (float)point(0);
-            data_array[1] = (float)point(1);
-            data_array[2] = (float)point(2);
+            data_array[0] = (float)map_points.at(i)->GetWorldPos()(2);
+            data_array[1] = (float)(-1.0 * map_points.at(i)->GetWorldPos()(0));
+            data_array[2] = (float)(-1.0 * map_points.at(i)->GetWorldPos()(1));
 
             memcpy(cloud_data_ptr + (i * cloud.point_step),
                    data_array, num_channels * sizeof(float));
