@@ -24,6 +24,11 @@ if (SUPPORT_SUPERPOINT)
     find_package(rclcpp REQUIRED)
     find_package(dnn_node REQUIRED)
     find_package(sensor_msgs REQUIRED)
+    find_package(nav_msgs REQUIRED)
+    find_package(rclcpp_components REQUIRED)
+    find_package(cv_bridge REQUIRED)
+    find_package(tf2 REQUIRED)
+    find_package(tf2_ros REQUIRED)
     message("dnn_node_includes: ${dnn_node_INCLUDE_DIR}")
     message("dnn_node_includes: ${dnn_node_INCLUDE_DIRS}")
     include_directories(
@@ -175,7 +180,12 @@ if (SUPPORT_SUPERPOINT)
 ament_target_dependencies(${PROJECT_NAME}
         rclcpp
         dnn_node
-        sensor_msgs)
+        sensor_msgs
+        nav_msgs
+        rclcpp_components
+        cv_bridge
+        tf2
+        tf2_ros)
 endif()
 
 # If RealSense SDK is found the library is added and its examples compiled

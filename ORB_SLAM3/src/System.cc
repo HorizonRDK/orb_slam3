@@ -255,6 +255,16 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
 
     // Fix verbosity
     Verbose::SetTh(Verbose::VERBOSITY_DEBUG);
+
+    //for rviz2
+    node_ = rclcpp::Node::make_shared("orb_slam3_ros2");
+    path_publisher_ = node_->
+            create_publisher<nav_msgs::msg::Path>("camera_path", 10);
+    pointcloud2_publisher_ = node_->
+            create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2", 10);
+    frame_publisher_ = node_->
+            create_publisher<sensor_msgs::msg::Image>("keypoint_render_frame", 10);
+
 }
 
 void print_fps() {
@@ -1747,6 +1757,173 @@ float System::GetImageScale()
 {
     return mpTracker->GetImageScale();
 }
+
+// for rviz2
+void System::PubImage(){
+    sensor_msgs::msg::Image img_msg;
+    cv_bridge::CvImage img_bridge;
+    cv::Mat toshow;
+    std_msgs::msg::Header header;
+
+    toshow = mpFrameDrawer->DrawFrame(1.0f);
+    img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
+    img_bridge.toImageMsg(img_msg);
+    frame_publisher_->publish(img_msg);
+}
+
+
+void System::PubPose(){
+    Eigen::Matrix4f Tcw_Matrix;
+    cv::Mat Tcw;
+    geometry_msgs::msg::TransformStamped tf_msg;
+    geometry_msgs::msg::PoseStamped pose_msg;
+
+    tf2_ros::TransformBroadcaster tf_broadcaster(node_);
+
+    Tcw_Matrix = mpTracker->mCurrentFrame.GetPose().matrix();
+    cv::eigen2cv(Tcw_Matrix, Tcw);
+
+    cv::Mat rotation(3, 3, CV_32F);
+    cv::Mat translation(3, 1, CV_32F);
+
+    rotation = Tcw.rowRange(0, 3).colRange(0, 3);
+    translation = Tcw.rowRange(0, 3).col(3);
+
+
+    tf2::Matrix3x3 tf_camera_rotation (rotation.at<float> (0, 0),
+                                       rotation.at<float> (0, 1),
+                                       rotation.at<float> (0, 2),
+                                       rotation.at<float> (1, 0),
+                                       rotation.at<float> (1, 1),
+                                       rotation.at<float> (1, 2),
+                                       rotation.at<float> (2, 0),
+                                       rotation.at<float> (2, 1),
+                                       rotation.at<float> (2, 2));
+
+    tf2::Vector3 tf_camera_translation (translation.at<float> (0),
+                                        translation.at<float> (1),
+                                        translation.at<float> (2));
+
+    //Coordinate transformation matrix from orb coordinate system to ros coordinate system
+    tf2::Matrix3x3 tf_orb_to_ros;
+    if(mSensor == IMU_STEREO || mSensor == IMU_MONOCULAR || mSensor == IMU_RGBD){
+        tf_orb_to_ros.setValue(0, 1, 0,
+                              -1, 0, 0,
+                               0, 0, 1);
+    }
+    else{
+        tf_orb_to_ros.setValue(0, 0, 1,
+                              -1, 0, 0,
+                               0, -1, 0);
+    }
+
+
+    //Transform from orb coordinate system to ros coordinate system on camera coordinates
+    tf_camera_rotation = tf_orb_to_ros * tf_camera_rotation;
+    tf_camera_translation = tf_orb_to_ros * tf_camera_translation;
+
+    //Inverse matrix
+    tf_camera_rotation = tf_camera_rotation.transpose();
+    tf_camera_translation = -(tf_camera_rotation * tf_camera_translation);
+
+    //Transform from orb coordinate system to ros coordinate system on map coordinates
+    tf_camera_rotation = tf_orb_to_ros * tf_camera_rotation;
+    tf_camera_translation = tf_orb_to_ros * tf_camera_translation;
+
+    tf2::Transform tf_transform =
+            tf2::Transform (tf_camera_rotation, tf_camera_translation);
+
+    tf_msg.header.frame_id = "map";
+    tf_msg.child_frame_id = "camera_link";
+    tf_msg.header.stamp = node_->get_clock()->now();
+    tf_msg.transform = tf2::toMsg(tf_transform);
+
+    tf_broadcaster.sendTransform(tf_msg);
+
+    pose_msg.pose.position.x = tf_transform.getOrigin().getX();
+    pose_msg.pose.position.y = tf_transform.getOrigin().getY();
+    pose_msg.pose.position.z = tf_transform.getOrigin().getZ();
+
+    pose_msg.pose.orientation.x = tf_transform.getRotation().getX();
+    pose_msg.pose.orientation.y = tf_transform.getRotation().getY();
+    pose_msg.pose.orientation.z = tf_transform.getRotation().getZ();
+    pose_msg.pose.orientation.w = tf_transform.getRotation().getW();
+
+    path_.header = tf_msg.header;
+    path_.poses.push_back(pose_msg);
+    path_publisher_->publish(path_);
+
+}
+
+
+void System::PubPointCloud(){
+    std::vector<ORB_SLAM3::MapPoint *> map_points;
+    map_points = mpAtlas->GetCurrentMap()->GetAllMapPoints();
+    sensor_msgs::msg::PointCloud2 cloud;
+
+    Eigen::Matrix3f Rcw;
+    Rcw << 0, 1, 0,
+          -1, 0, 0,
+           0, 0, 1;
+
+    Eigen::Vector3f point;
+
+    const int num_channels = 3; // x y z
+
+    cloud.header.stamp = node_->get_clock()->now();;
+    cloud.header.frame_id = "map";
+    cloud.height = 1;
+    cloud.width = map_points.size();  //点的个数
+    cloud.is_bigendian = false;
+    cloud.is_dense = true;
+    cloud.point_step = num_channels * sizeof(float); //一个点占用存储空间
+    cloud.row_step = cloud.point_step * cloud.width; //整个点云占用存储空间
+    cloud.fields.resize(num_channels);
+
+    std::string channel_id[] = { "x", "y", "z"};
+    for (int i = 0; i < num_channels; i++) {
+        cloud.fields[i].name = channel_id[i];
+        cloud.fields[i].offset = i * sizeof(float);
+        cloud.fields[i].count = 1;
+        cloud.fields[i].datatype = sensor_msgs::msg::PointField::FLOAT32;
+    }
+
+    cloud.data.resize(cloud.row_step * cloud.height);
+
+    unsigned char *cloud_data_ptr = &(cloud.data[0]);
+
+    float data_array[num_channels];
+    for (unsigned int i = 0; i < cloud.width; i++) {
+        if (map_points.at(i)->nObs >= 2) {
+
+            if(mSensor == IMU_STEREO
+               ||mSensor == IMU_MONOCULAR
+               ||mSensor == IMU_RGBD){
+
+                point = Rcw * map_points.at(i)->GetWorldPos();
+
+                data_array[0] = (float)point(0);
+                data_array[1] = (float)point(1);
+                data_array[2] = (float)point(2);
+
+                memcpy(cloud_data_ptr + (i * cloud.point_step),
+                       data_array, num_channels * sizeof(float));
+            }
+            else{
+
+                data_array[0] = (float)map_points.at(i)->GetWorldPos()(2);
+                data_array[1] = (float)(-1.0 * map_points.at(i)->GetWorldPos()(0));
+                data_array[2] = (float)(-1.0 * map_points.at(i)->GetWorldPos()(1));
+
+                memcpy(cloud_data_ptr + (i * cloud.point_step),
+                       data_array, num_channels * sizeof(float));
+            }
+        }
+    }
+    pointcloud2_publisher_->publish(cloud);
+}
+
+
 
 #ifdef REGISTER_TIMES
 void System::InsertRectTime(double& time)
