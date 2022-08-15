@@ -99,7 +99,7 @@ int main(int argc, char **argv) {
     return -1;
   }
   std::vector<int> lapping = {0, 0};
-  std::string images_directory = std::string(argv[1]) + "/cam0";
+  std::string images_directory = std::string(argv[1]);
   std::string timestamp_file = std::string(argv[2]);
   std::vector<std::string> images;
   std::vector<double> timestamps;
@@ -117,10 +117,9 @@ int main(int argc, char **argv) {
                         keypoints, descriptors, lapping);
     //  std::cout << descriptors << std::endl;
     LoadFeatures(features, descriptors);
-    if (cnt >= image_size) {
-      std::cout << "extractor image... "
-                << cnt << "/" << image_size << std::endl;
-    }
+
+    std::cout << "extractor image... "
+              << ++cnt << "/" << image_size << std::endl;
     if (!b_continue_session) {
       return -1;
     }

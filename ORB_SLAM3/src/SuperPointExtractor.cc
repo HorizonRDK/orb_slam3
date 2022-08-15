@@ -132,6 +132,13 @@ int SuperPointextractor::operator()(
         const std::vector<std::shared_ptr<DNNResult>> &outputs = dnn_output->outputs;
         auto *extractor_result =
                 dynamic_cast<SuperPointResult *>(outputs[0].get());
+        if (dnn_output->width_ratio_ != 1.0f
+            || dnn_output->hight_ratio_ != 1.0f) {
+          for (auto &kp : extractor_result->keypoints_) {
+            kp.pt.x *= dnn_output->width_ratio_;
+            kp.pt.y *= dnn_output->hight_ratio_;
+          }
+        }
         {
           //std::lock_guard<std::mutex> mtx(allKeypoints_mtx_);
           allKeypoints[level] = extractor_result->keypoints_;
@@ -231,6 +238,8 @@ int SuperPointNode::PredictByImage(const cv::Mat &image,
   if (model_input_height_ != image.rows || model_input_width_ != image.cols || true) {
     cv::resize(image, image_model_input,
                cv::Size(model_input_width_, model_input_height_), cv::INTER_AREA);
+    dnn_output->width_ratio_ = 1.0f * image.cols / model_input_width_;
+    dnn_output->hight_ratio_ = 1.0f * image.rows / model_input_height_;
   } else {
     image_model_input = image;
   }

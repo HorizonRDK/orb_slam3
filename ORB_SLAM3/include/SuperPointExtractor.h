@@ -163,6 +163,7 @@ static int32_t SoftmaxCore(float32_t const* const in,
 struct SuperPointOutput : public DnnNodeOutput {
 public:
   std::promise<bool> predict_promise_;
+  float width_ratio_ = 1.0f, hight_ratio_ = 1.0f;
 };
 
 static void NmsFast(std::vector<cv::KeyPoint>& pts, std::vector<cv::KeyPoint> &kps_nms,
