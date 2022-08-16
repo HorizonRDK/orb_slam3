@@ -256,7 +256,8 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     // Fix verbosity
     Verbose::SetTh(Verbose::VERBOSITY_DEBUG);
 
-    //for rviz2
+#ifdef SUPPORT_SUPERPOINT
+    // for rviz2
     node_ = rclcpp::Node::make_shared("orb_slam3_ros2");
     path_publisher_ = node_->
             create_publisher<nav_msgs::msg::Path>("camera_path", 10);
@@ -264,7 +265,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
             create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2", 10);
     frame_publisher_ = node_->
             create_publisher<sensor_msgs::msg::Image>("keypoint_render_frame", 10);
-
+#endif
 }
 
 void print_fps() {
@@ -1758,8 +1759,9 @@ float System::GetImageScale()
     return mpTracker->GetImageScale();
 }
 
+#ifdef SUPPORT_SUPERPOINT
 // for rviz2
-void System::PubImage(){
+void System::PubImage() {
     sensor_msgs::msg::Image img_msg;
     cv_bridge::CvImage img_bridge;
     cv::Mat toshow;
@@ -1771,8 +1773,7 @@ void System::PubImage(){
     frame_publisher_->publish(img_msg);
 }
 
-
-void System::PubPose(){
+void System::PubPose() {
     Eigen::Matrix4f Tcw_Matrix;
     cv::Mat Tcw;
     geometry_msgs::msg::TransformStamped tf_msg;
@@ -1804,21 +1805,24 @@ void System::PubPose(){
                                         translation.at<float> (1),
                                         translation.at<float> (2));
 
-    //Coordinate transformation matrix from orb coordinate system to ros coordinate system
+    // Coordinate transformation matrix from
+    // orb coordinate system to ros coordinate system
     tf2::Matrix3x3 tf_orb_to_ros;
-    if(mSensor == IMU_STEREO || mSensor == IMU_MONOCULAR || mSensor == IMU_RGBD){
+    if ( mSensor == IMU_STEREO
+      || mSensor == IMU_MONOCULAR
+      || mSensor == IMU_RGBD) {
         tf_orb_to_ros.setValue(0, 1, 0,
                               -1, 0, 0,
                                0, 0, 1);
-    }
-    else{
+    }else{
         tf_orb_to_ros.setValue(0, 0, 1,
                               -1, 0, 0,
                                0, -1, 0);
     }
 
 
-    //Transform from orb coordinate system to ros coordinate system on camera coordinates
+    // Transform from orb coordinate system to
+    // ros coordinate system on camera coordinates
     tf_camera_rotation = tf_orb_to_ros * tf_camera_rotation;
     tf_camera_translation = tf_orb_to_ros * tf_camera_translation;
 
@@ -1826,7 +1830,8 @@ void System::PubPose(){
     tf_camera_rotation = tf_camera_rotation.transpose();
     tf_camera_translation = -(tf_camera_rotation * tf_camera_translation);
 
-    //Transform from orb coordinate system to ros coordinate system on map coordinates
+    // Transform from orb coordinate system to
+    // ros coordinate system on map coordinates
     tf_camera_rotation = tf_orb_to_ros * tf_camera_rotation;
     tf_camera_translation = tf_orb_to_ros * tf_camera_translation;
 
@@ -1852,11 +1857,9 @@ void System::PubPose(){
     path_.header = tf_msg.header;
     path_.poses.push_back(pose_msg);
     path_publisher_->publish(path_);
-
 }
 
-
-void System::PubPointCloud(){
+void System::PubPointCloud() {
     std::vector<ORB_SLAM3::MapPoint *> map_points;
     map_points = mpAtlas->GetCurrentMap()->GetAllMapPoints();
     sensor_msgs::msg::PointCloud2 cloud;
@@ -1895,10 +1898,9 @@ void System::PubPointCloud(){
     float data_array[num_channels];
     for (unsigned int i = 0; i < cloud.width; i++) {
         if (map_points.at(i)->nObs >= 2) {
-
-            if(mSensor == IMU_STEREO
+            if ( mSensor == IMU_STEREO
                ||mSensor == IMU_MONOCULAR
-               ||mSensor == IMU_RGBD){
+               ||mSensor == IMU_RGBD) {
 
                 point = Rcw * map_points.at(i)->GetWorldPos();
 
@@ -1908,9 +1910,7 @@ void System::PubPointCloud(){
 
                 memcpy(cloud_data_ptr + (i * cloud.point_step),
                        data_array, num_channels * sizeof(float));
-            }
-            else{
-
+            } else {
                 data_array[0] = (float)map_points.at(i)->GetWorldPos()(2);
                 data_array[1] = (float)(-1.0 * map_points.at(i)->GetWorldPos()(0));
                 data_array[2] = (float)(-1.0 * map_points.at(i)->GetWorldPos()(1));
@@ -1922,8 +1922,7 @@ void System::PubPointCloud(){
     }
     pointcloud2_publisher_->publish(cloud);
 }
-
-
+#endif
 
 #ifdef REGISTER_TIMES
 void System::InsertRectTime(double& time)

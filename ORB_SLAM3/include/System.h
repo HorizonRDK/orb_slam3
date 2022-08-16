@@ -29,6 +29,7 @@
 #include <future>
 #include <opencv2/core/core.hpp>
 
+#ifdef SUPPORT_SUPERPOINT
 #include <Eigen/Core>
 #include <opencv2/core/eigen.hpp>
 #include <rclcpp/rclcpp.hpp>
@@ -39,6 +40,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.h>
 #include <nav_msgs/msg/path.hpp>
 #include <sensor_msgs/msg/point_cloud2.hpp>
+#endif
 
 #include "Tracking.h"
 #include "FrameDrawer.h"
@@ -237,10 +239,12 @@ public:
 
     float GetImageScale();
 
-    //for rviz2
+#ifdef SUPPORT_SUPERPOINT
+    // for rviz2
     void PubImage();
     void PubPose();
     void PubPointCloud();
+#endif
 
 #ifdef REGISTER_TIMES
     void InsertRectTime(double& time);
@@ -326,15 +330,15 @@ private:
     std::map<double, std::shared_ptr<FrameWrapper>, std::less<double>> mFrameQueue;
     std::shared_ptr<std::thread> mTrackThread;
 
-    //for rviz2
+#ifdef SUPPORT_SUPERPOINT
+    // for rviz2
     std::shared_ptr<rclcpp::Node> node_;
     nav_msgs::msg::Path path_;
     rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
     rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr frame_publisher_;
-
+#endif
     };
-
 }// namespace ORB_SLAM
 
 #endif // SYSTEM_H
