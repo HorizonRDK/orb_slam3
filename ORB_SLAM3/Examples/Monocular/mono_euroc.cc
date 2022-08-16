@@ -28,6 +28,7 @@
 #include <rclcpp/rclcpp.hpp>
 #endif
 using namespace std;
+bool b_pub = true;
 
 void LoadImages(const string &strImagePath, const string &strPathTimes,
                 vector<string> &vstrImages, vector<double> &vTimeStamps);
@@ -86,6 +87,18 @@ int main(int argc, char **argv)
     // Create SLAM system. It initializes all system threads and gets ready to process frames.
     ORB_SLAM3::System SLAM(argv[1],argv[2],ORB_SLAM3::System::MONOCULAR, false);
     float imageScale = SLAM.GetImageScale();
+
+#ifdef SUPPORT_SUPERPOINT
+    std::shared_ptr<std::thread> pub_thread = std::make_shared<std::thread>(
+            [&](){
+              while (b_pub) {
+                std::this_thread::sleep_for(std::chrono::milliseconds(100));
+                SLAM.PubPointCloud();
+                SLAM.PubPose();
+                SLAM.PubImage();
+              }
+            });
+#endif
 
     double t_resize = 0.f;
     double t_track = 0.f;
@@ -188,6 +201,10 @@ int main(int argc, char **argv)
 
     }
     // Stop all threads
+    b_pub = false;
+#ifdef SUPPORT_SUPERPOINT
+    pub_thread->join();
+#endif
     SLAM.Shutdown();
 
     // Save camera trajectory

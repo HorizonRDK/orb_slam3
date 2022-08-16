@@ -120,7 +120,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
         bool bVocLoad{true};
         string postfix = strVocFile.substr(strVocFile.find_last_of('.') + 1);
         try {
-          mpVocabulary->load(strVocFile);
+          mpVocabulary->loadFromTextFile(strVocFile);
         } catch (exception &e) {
           bVocLoad = false;
         }

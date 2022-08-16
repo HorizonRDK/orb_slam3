@@ -41,8 +41,7 @@ void CreateVocabularyFile(
 
   // save the vocabulary to disk
   std::cout << std::endl << "> Saving vocabulary..." << std::endl;
-  //  voc.saveToTextFile(fileName);
-  voc.save(fileName, true);
+  voc.saveToTextFile(fileName);
   std::cout << "... saved to file: " << fileName << std::endl;
 }
 
@@ -127,8 +126,14 @@ int main(int argc, char **argv) {
 
   const int k = 10;
   const int L = 6;
+
+#ifdef SUPPORT_DBOW3
   const DBoW3::WeightingType weight = DBoW3::TF_IDF;
   const DBoW3::ScoringType scoring = DBoW3::L1_NORM;
+#else
+  const DBoW2::WeightingType weight = DBoW2::TF_IDF;
+  const DBoW2::ScoringType scoring = DBoW2::L1_NORM;
+#endif
   ORB_SLAM3::ORBVocabulary voc(k, L, weight, scoring);
   CreateVocabularyFile(voc, std::string(argv[3]), features);
   return 0;

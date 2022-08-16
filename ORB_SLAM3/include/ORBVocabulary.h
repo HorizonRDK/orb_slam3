@@ -22,23 +22,26 @@
 
 #ifdef SUPPORT_DBOW3
 #include "Thirdparty/DBoW3/src/DBoW3.h"
+#include "Thirdparty/DBoW3/src/DUtils/Random.h"
 #else
-#include "Thirdparty/DBoW3/src/DBoW3.h"
+#include "Thirdparty/DBoW2/DBoW2/FORB.h"
+#include "Thirdparty/DBoW2/DBoW2/TemplatedVocabulary.h"
+#include "Thirdparty/DBoW2/DUtils/Random.h"
 #endif
-
-//#include"Thirdparty/DBoW2/DBoW2/FORB.h"
-//#include"Thirdparty/DBoW2/DBoW2/TemplatedVocabulary.h"
-
 
 namespace ORB_SLAM3
 {
-
-//typedef DBoW2::TemplatedVocabulary<DBoW2::FORB::TDescriptor, DBoW2::FORB>
-//  ORBVocabulary;
-
-typedef DBoW3::Vocabulary SPVocabulary;
-
-typedef SPVocabulary ORBVocabulary;
+#ifdef SUPPORT_DBOW3
+  using SPVocabulary = DBoW3::Vocabulary;
+  using ORBVocabulary = SPVocabulary;
+  using Bowvector = DBoW3::BowVector;
+  using FeatureVector = DBoW3::FeatureVector;
+#else
+  using ORBVocabulary = DBoW2::TemplatedVocabulary<
+          DBoW2::FORB::TDescriptor, DBoW2::FORB>;
+  using BowVector = DBoW2::BowVector;
+  using FeatureVector = DBoW2::FeatureVector;
+#endif
 
 } //namespace ORB_SLAM
 

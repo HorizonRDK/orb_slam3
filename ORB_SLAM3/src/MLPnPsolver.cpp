@@ -47,9 +47,8 @@
 ******************************************************************************/
 
 #include "MLPnPsolver.h"
-#include "Thirdparty/DBoW3/src/DUtils/Random.h"
 #include <Eigen/Sparse>
-
+#include "ORBVocabulary.h"
 
 namespace ORB_SLAM3 {
     MLPnPsolver::MLPnPsolver(const Frame &F, const vector<MapPoint *> &vpMapPointMatches):

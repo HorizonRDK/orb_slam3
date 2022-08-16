@@ -158,7 +158,7 @@ include/Config.h
 include/Settings.h)
 
 add_subdirectory(Thirdparty/g2o)
-add_subdirectory(Thirdparty/DBoW3)
+add_subdirectory(Thirdparty/DBoW2)
 
 message("OpenCV_LIBS: ${OpenCV_LIBS}")
 message("Pangolin_LIBRARIES: ${Pangolin_LIBRARIES}")
@@ -168,7 +168,7 @@ target_link_libraries(${PROJECT_NAME}
 ${OpenCV_LIBS}
 ${EIGEN3_LIBS}
 ${Pangolin_LIBRARIES}
-DBoW3
+DBoW2
 g2o
 -lboost_serialization
 #-lcrypto
@@ -480,7 +480,7 @@ install(DIRECTORY include/
 install(DIRECTORY Thirdparty/
         DESTINATION include/orb_slam3/Thirdparty/
         )
-install(TARGETS ${PROJECT_NAME} DBoW3 g2o
+install(TARGETS ${PROJECT_NAME} DBoW2 g2o
         ARCHIVE DESTINATION lib
         LIBRARY DESTINATION lib
         RUNTIME DESTINATION bin/${PROJECT_NAME}
@@ -494,7 +494,7 @@ install(DIRECTORY config
 install(DIRECTORY Vocabulary
         DESTINATION share/${PROJECT_NAME}
         )
-ament_export_libraries(${PROJECT_NAME} DBoW3 g2o)
+ament_export_libraries(${PROJECT_NAME} DBoW2 g2o)
 ament_export_include_directories(include)
 ament_export_libraries(${PROJECT_NAME})
 ament_export_dependencies(dnn_node)
