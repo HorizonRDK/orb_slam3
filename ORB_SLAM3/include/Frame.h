@@ -22,9 +22,6 @@
 
 #include<vector>
 
-//#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-//#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
-
 #include "Thirdparty/Sophus/sophus/geometry.hpp"
 
 #include "ImuTypes.h"
@@ -237,8 +234,8 @@ public:
     std::vector<float> mvDepth;
 
     // Bag of Words Vector structures.
-    DBoW3::BowVector mBowVec;
-    DBoW3::FeatureVector mFeatVec;
+    BowVector mBowVec;
+    FeatureVector mFeatVec;
 
     // ORB descriptor, each row associated to a keypoint.
     cv::Mat mDescriptors, mDescriptorsRight;

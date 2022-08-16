@@ -21,8 +21,6 @@
 #define KEYFRAME_H
 
 #include "MapPoint.h"
-//#include "Thirdparty/DBoW2/DBoW2/BowVector.h"
-//#include "Thirdparty/DBoW2/DBoW2/FeatureVector.h"
 #include "ORBVocabulary.h"
 #include "ORBextractor.h"
 #include "Frame.h"
@@ -384,9 +382,8 @@ public:
     const std::vector<float> mvDepth; // negative value for monocular points
     const cv::Mat mDescriptors;
 
-    //BoW
-    DBoW3::BowVector mBowVec;
-    DBoW3::FeatureVector mFeatVec;
+    BowVector mBowVec;
+    FeatureVector mFeatVec;
 
     // Pose relative to parent (this is computed when bad flag is activated)
     Sophus::SE3f mTcp;

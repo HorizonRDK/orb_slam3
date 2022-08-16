@@ -13,22 +13,23 @@
 #include "BowVector.h"
 #include <map>
 #include <vector>
+#include <iostream>
+
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
-#include "exports.h"
-namespace DBoW3 {
+
+namespace DBoW2 {
 
 /// Vector of nodes with indexes of local features
-class  DBOW_API FeatureVector:
+class FeatureVector: 
   public std::map<NodeId, std::vector<unsigned int> >
 {
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive& ar, const int version)
-  {
-    ar & boost::serialization::base_object<std::map<NodeId, std::vector<unsigned int> > >(*this);
-  }
-
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive& ar, const int version)
+    {
+        ar & boost::serialization::base_object<std::map<NodeId, std::vector<unsigned int> > >(*this);
+    }
 
 public:
 
@@ -59,7 +60,7 @@ public:
     
 };
 
-} // namespace DBoW3
+} // namespace DBoW2
 
 #endif
 

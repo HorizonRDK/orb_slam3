@@ -75,7 +75,7 @@ sudo apt-get install ros-$ROS_DISTRO-librealsense2* -y
 sudo apt-get install ros-$ROS_DISTRO-realsense2-camera -y
 sudo apt-get install ros-$ROS_DISTRO-realsense2-description -y
 ```
-安装完毕后，我们启动Realsense作为图像发布节点，视觉SLAM节点作为图像订阅者，订阅图像话题并发布位姿和点云等信息。
+安装完毕后，我们启动Realsense相机作为图像发布节点，视觉SLAM节点作为图像订阅者，订阅图像话题并发布位姿和点云等信息。
 
 接下来，我们使用root账户（密码：root）登录X3派，启动Realsense D435i相机，否则权限不足无法正常启动相机。
 ```
@@ -111,9 +111,16 @@ X3端的视觉SLAM节点启动并接收到相机图像数据后开始打印当�
 ### 使用基于SuperPoint优化的ORB-SLAM3
 
 众所周知，深度学习方法具有传统算法无法比拟的优势和潜力，尤其是在检测和分类任务的稳定性、效率和精度方面，深度学习方法表现出了惊人的优势。在视觉SLAM领域，也涌现出了很多使用深度学习方法代替传统SLAM前端和后端的工作，并表现出明显的优势。其中SuperPoint和SuperGlue就是典型。
-SuperPoint是一款自监督深度学习网络模型，能够同时提取图像特征点的位置以及描述子。我们使用地平线浮点模型转换工具，把GitHub上开源的SuperPoint的模型和权重文件转换为X3芯片深度学习加速器可加速的定点模型（转换的教程可参考地平线开发者社区：https://developer.horizon.ai/forumDetail/136488103547258769）。
-并与ORB-SLAM3做了整合，开发者可以在代码仓库里的 Examples/\*/*.yaml配置文件里自由切换使用的特征点提取方法。如下图所示，使用的特征点提取算法为“SUPERPOINT”：
+SuperPoint是一款自监督深度学习网络模型，能够同时提取图像特征点的位置以及描述子。
+
+我们使用已经转换好的定点superpoint模型，使用wget下载好后放入orb_slam3的config目录下。
+```
+wget https://developer.horizon.ai/api/v1/static/fileData/superpoint_640x480_20220816180055.bin -O ./superpoint_640x480.bin
+cp superpoint_640x480.bin ./config/
+```
+我们把SuperPoint与ORB-SLAM3做了整合，开发者可以在/opt/tros/share/orb_slam3/Examples/\*/*.yaml配置文件里自由切换使用的特征点提取方法。如下图所示，使用的特征点提取算法为“SUPERPOINT”：
 ![](./_static/_images/visual_slam/superpoint.png)
 
 使用Superpoint特征提取算法的结果如下图所示，可以看到，特征点提取非常稠密，检测出了物体的轮廓。
 ![](./_static/_images/visual_slam/superpoint_result.png)
+

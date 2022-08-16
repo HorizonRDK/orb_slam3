@@ -10,17 +10,14 @@
 #ifndef __D_T_BOW_VECTOR__
 #define __D_T_BOW_VECTOR__
 
+#include <iostream>
 #include <map>
 #include <vector>
-#include "exports.h"
 
 #include <boost/serialization/serialization.hpp>
 #include <boost/serialization/map.hpp>
 
-#if _WIN32
-#include <cstdint>
-#endif
-namespace DBoW3 {
+namespace DBoW2 {
 
 /// Id of words
 typedef unsigned int WordId;
@@ -28,7 +25,7 @@ typedef unsigned int WordId;
 /// Value of a word
 typedef double WordValue;
 
-/// Id of nodes in the vocabulary tree
+/// Id of nodes in the vocabulary treee
 typedef unsigned int NodeId;
 
 /// L-norms for normalization
@@ -55,19 +52,20 @@ enum ScoringType
   CHI_SQUARE,
   KL,
   BHATTACHARYYA,
-  DOT_PRODUCT
+  DOT_PRODUCT,
 };
 
 /// Vector of words to represent images
-class DBOW_API BowVector:
+class BowVector: 
 	public std::map<WordId, WordValue>
 {
-  friend class boost::serialization::access;
-  template<class Archive>
-  void serialize(Archive& ar, const int version)
-  {
-    ar & boost::serialization::base_object<std::map<WordId, WordValue> >(*this);
-  }
+    friend class boost::serialization::access;
+    template<class Archive>
+    void serialize(Archive& ar, const int version)
+    {
+        ar & boost::serialization::base_object<std::map<WordId, WordValue> >(*this);
+    }
+
 public:
 
 	/** 
@@ -114,14 +112,8 @@ public:
 	 * @param W number of words in the vocabulary
 	 */
 	void saveM(const std::string &filename, size_t W) const;
-
-    //returns a unique number from the configuration
-    uint64_t getSignature()const;
-    //serialization
-    void toStream(std::ostream &str)const;
-    void fromStream(std::istream &str);
 };
 
-} // namespace DBoW3
+} // namespace DBoW2
 
 #endif
