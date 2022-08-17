@@ -3,9 +3,7 @@
 ### 功能介绍
 
 SLAM一般指即时定位与地图构建，即时定位与地图构建（Simultaneous Localization and Mapping，简称SLAM）。 众所周知，视觉SLAM领域最突出的工作非ORB-SLAM3莫属。ORB-SLAM3的优点和特性在此不再赘述。TogetherROS为了方便开发者开发基于视觉SLAM的应用，集成、改进和优化了ORB-SLAM3。
-1. 集成和适配SuperPoint特征提取模型以优化视觉SLAM前端图像特征提取的鲁棒性。
-SuperPoint是一款自监督深度学习网络模型，能够同时提取图像特征点的位置以及描述子。我们使用开源的权重和模型文件（https://github.com/magicleap/SuperPointPretrainedNetwork）
-并经过地平线浮点模型转换工具转换成X3芯片可运行的定点模型，运行在X3芯片的深度学习网络加速器上，以降低CPU的运行负载。
+1. 集成和适配SuperPoint特征提取模型以优化视觉SLAM前端图像特征提取的鲁棒性，并降低CPU的运行负载。
 2. 使用ROS2封装了ORB-SLAM3的点云和位姿信息发布以及图像和IMU的订阅。
 3. 增加了Track异步接口，分离特征提取和特征点跟踪为不同的线程，提高了处理帧率，有利于实际的工程应用。
 4. 新增词袋库创建程序，帮助开发者构建自己的词袋库。
