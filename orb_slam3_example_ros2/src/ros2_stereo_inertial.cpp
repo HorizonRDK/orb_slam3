@@ -348,7 +348,8 @@ void ImageGrabber::PubImage() {
     cv::Mat toshow;
     std_msgs::msg::Header header;
     bool received_image;
-
+    header.stamp = node_->now();
+    header.frame_id = "camera_link";
     while (rclcpp::ok()) {
 
         std::unique_lock <std::mutex> locker_image(image_mutex_);
