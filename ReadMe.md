@@ -110,12 +110,6 @@ X3端的视觉SLAM节点启动并接收到相机图像数据后开始打印当�
 
 众所周知，深度学习方法具有传统算法无法比拟的优势和潜力，尤其是在检测和分类任务的稳定性、效率和精度方面，深度学习方法表现出了惊人的优势。在视觉SLAM领域，也涌现出了很多使用深度学习方法代替传统SLAM前端和后端的工作，并表现出明显的优势。其中SuperPoint和SuperGlue就是典型。
 SuperPoint是一款自监督深度学习网络模型，能够同时提取图像特征点的位置以及描述子。
-
-我们使用已经转换好的定点superpoint模型，使用wget下载好后放入orb_slam3的config目录下。
-```
-wget https://developer.horizon.ai/api/v1/static/fileData/superpoint_640x480_20220816180055.bin -O ./superpoint_640x480.bin
-cp superpoint_640x480.bin ./config/
-```
 我们把SuperPoint与ORB-SLAM3做了整合，开发者可以在/opt/tros/share/orb_slam3/Examples/\*/*.yaml配置文件里自由切换使用的特征点提取方法。如下图所示，使用的特征点提取算法为“SUPERPOINT”：
 ![](./_static/_images/visual_slam/superpoint.png)
 
