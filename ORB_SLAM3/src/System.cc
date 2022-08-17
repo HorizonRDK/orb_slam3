@@ -1766,6 +1766,8 @@ void System::PubImage() {
     cv_bridge::CvImage img_bridge;
     cv::Mat toshow;
     std_msgs::msg::Header header;
+    header.stamp = node_->now();
+    header.frame_id = "camera_link";
 
     toshow = mpFrameDrawer->DrawFrame(1.0f);
     img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
