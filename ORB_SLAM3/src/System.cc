@@ -257,14 +257,7 @@ System::System(const string &strVocFile, const string &strSettingsFile, const eS
     Verbose::SetTh(Verbose::VERBOSITY_DEBUG);
 
 #ifdef SUPPORT_SUPERPOINT
-    // for rviz2
     node_ = rclcpp::Node::make_shared("orb_slam3_ros2");
-    path_publisher_ = node_->
-            create_publisher<nav_msgs::msg::Path>("camera_path", 10);
-    pointcloud2_publisher_ = node_->
-            create_publisher<sensor_msgs::msg::PointCloud2>("map_pointcloud2", 10);
-    frame_publisher_ = node_->
-            create_publisher<sensor_msgs::msg::Image>("keypoint_render_frame", 10);
 #endif
 }
 
@@ -1772,6 +1765,11 @@ void System::PubImage() {
     toshow = mpFrameDrawer->DrawFrame(1.0f);
     img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
     img_bridge.toImageMsg(img_msg);
+    if (frame_publisher_ == nullptr) {
+      frame_publisher_ = node_->create_publisher<
+              sensor_msgs::msg::Image>(
+                      "keypoint_render_frame", 10);
+    }
     frame_publisher_->publish(img_msg);
 }
 
@@ -1856,9 +1854,14 @@ void System::PubPose() {
     pose_msg.pose.orientation.z = tf_transform.getRotation().getZ();
     pose_msg.pose.orientation.w = tf_transform.getRotation().getW();
 
-    path_.header = tf_msg.header;
-    path_.poses.push_back(pose_msg);
-    path_publisher_->publish(path_);
+    auto path = nav_msgs::msg::Path{};
+    path.header = tf_msg.header;
+    path.poses.push_back(pose_msg);
+    if (path_publisher_ == nullptr) {
+      path_publisher_ = node_->create_publisher<
+              nav_msgs::msg::Path>("camera_path", 10);
+    }
+    path_publisher_->publish(path);
 }
 
 void System::PubPointCloud() {
@@ -1922,7 +1925,11 @@ void System::PubPointCloud() {
             }
         }
     }
-    pointcloud2_publisher_->publish(cloud);
+    if (pointcloud2_publisher_ == nullptr) {
+      pointcloud2_publisher_ = node_->create_publisher<
+              sensor_msgs::msg::PointCloud2>("map_pointcloud2", 10);
+    }
+  pointcloud2_publisher_->publish(cloud);
 }
 #endif
 

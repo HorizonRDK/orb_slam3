@@ -254,7 +254,6 @@ void ImageGrabber::PubImage() {
     cv::Mat toshow;
     std_msgs::msg::Header header;
     bool received_image;
-    header.stamp = node_->now();
     header.frame_id = "camera_link";
     while (rclcpp::ok()) {
 
@@ -267,6 +266,7 @@ void ImageGrabber::PubImage() {
 
         if(received_image) {
             toshow = mpSLAM_->GetmpFrameDrawe()->DrawFrame(1.0f);
+            header.stamp = node_->now();
             img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
             img_bridge.toImageMsg(img_msg);
             frame_publisher_->publish(img_msg);
@@ -293,7 +293,7 @@ int main(int argc, char **argv) {
     rclcpp::init(argc, argv);
 
     if(argc < 3) {
-        cerr << endl << "Usage: ros2 run orb_slam3_example_ros2 mono_inertial path_to_vocabulary path_to_settings" << endl;
+        cerr << endl << "Usage: ros2 run orb_slam3_example_ros2 mono path_to_vocabulary path_to_settings" << endl;
         rclcpp::shutdown();
         return 1;
     }

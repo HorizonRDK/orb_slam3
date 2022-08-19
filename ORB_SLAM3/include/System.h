@@ -332,11 +332,10 @@ private:
 
 #ifdef SUPPORT_SUPERPOINT
     // for rviz2
-    std::shared_ptr<rclcpp::Node> node_;
-    nav_msgs::msg::Path path_;
-    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_;
-    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_;
-    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr frame_publisher_;
+    rclcpp::Publisher<nav_msgs::msg::Path>::SharedPtr path_publisher_ = nullptr;
+    rclcpp::Publisher<sensor_msgs::msg::PointCloud2>::SharedPtr pointcloud2_publisher_ = nullptr;
+    rclcpp::Publisher<sensor_msgs::msg::Image>::SharedPtr frame_publisher_ = nullptr;
+    rclcpp::Node::SharedPtr node_;
 #endif
     };
 }// namespace ORB_SLAM
