@@ -320,7 +320,6 @@ void ImageGrabber::PubImage() {
     cv::Mat toshow;
     std_msgs::msg::Header header;
     bool received_image;
-    header.stamp = node_->now();
     header.frame_id = "camera_link";
     while (rclcpp::ok()) {
 
@@ -333,6 +332,7 @@ void ImageGrabber::PubImage() {
 
         if(received_image) {
             toshow = mpSLAM_->GetmpFrameDrawe()->DrawFrame(1.0f);
+            header.stamp = node_->now();
             img_bridge = cv_bridge::CvImage(header, "bgr8", toshow);
             img_bridge.toImageMsg(img_msg);
             frame_publisher_->publish(img_msg);
