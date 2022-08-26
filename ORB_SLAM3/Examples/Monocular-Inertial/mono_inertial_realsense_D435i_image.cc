@@ -29,7 +29,9 @@
 
 #include<System.h>
 #include "ImuTypes.h"
-
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
 using namespace std;
 
 bool b_continue_session;
@@ -54,7 +56,9 @@ int main(int argc, char *argv[])
                         " path_to_times_file_1 (path_to_image_folder_2 path_to_times_file_2 ... path_to_image_folder_N path_to_times_file_N) " << endl;
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     const int num_seq = (argc-3)/2;
     cout << "num_seq = " << num_seq << endl;
     bool bFileName= (((argc-3) % 2) == 1);
@@ -239,7 +243,7 @@ int main(int argc, char *argv[])
                 T = tframe-vTimestampsCam[seq][ni-1];
 
             if(ttrack<T)
-                usleep((T-ttrack)*1e6); // 1e6
+                usleep((T-ttrack)*3*1e6); // 1e6
         }
         if(seq < num_seq - 1)
         {

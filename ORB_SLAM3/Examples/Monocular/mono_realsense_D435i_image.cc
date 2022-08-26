@@ -25,6 +25,10 @@
 
 #include<System.h>
 
+#ifdef SUPPORT_SUPERPOINT
+#include <rclcpp/rclcpp.hpp>
+#endif
+
 using namespace std;
 
 bool b_continue_session;
@@ -49,7 +53,9 @@ int main(int argc, char **argv)
                         "(trajectory_file_name)" << endl;
         return 1;
     }
-
+#ifdef SUPPORT_SUPERPOINT
+  rclcpp::init(argc, argv);
+#endif
     const int num_seq = (argc-3)/2;
     cout << "num_seq = " << num_seq << endl;
     bool bFileName= (((argc-3) % 2) == 1);
@@ -160,10 +166,11 @@ int main(int argc, char **argv)
 
             // Pass the image to the SLAM system
             // cout << "tframe = " << tframe << endl;
-            //  SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
+//           SLAM.TrackMonocular(im,tframe); // TODO change to monocular_inertial
             SLAM.TrackMonocularAsync(im, tframe,
                     std::vector<ORB_SLAM3::IMU::Point>(), "");
-    #ifdef COMPILEDWITHC11
+
+#ifdef COMPILEDWITHC11
             std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
     #else
             std::chrono::monotonic_clock::time_point t2 = std::chrono::monotonic_clock::now();
