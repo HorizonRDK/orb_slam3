@@ -34,7 +34,6 @@ int SuperPointextractor::operator()(
   std::vector<std::shared_ptr<std::promise<bool>>> promises;
   promises.reserve(nlevels);
   auto start = std::chrono::high_resolution_clock::now();
-
   for (int level = 0; level < nlevels; ++level) {
     auto extractor_kps_cpu = [&](int level) {
       const int minBorderX = EDGE_THRESHOLD - 3;

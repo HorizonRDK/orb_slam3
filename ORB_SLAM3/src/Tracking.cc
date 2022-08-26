@@ -1462,7 +1462,7 @@ std::shared_ptr<Frame> Tracking::CreateFrame(
   cv::Mat image_left = imLeft;
   cv::Mat image_right = imRight;
   cv::ColorConversionCodes color_codes;
-  if (mImGray.channels() == 3) {
+  if (imLeft.channels() == 3) {
     if (mbRGB) {
       color_codes = cv::COLOR_RGB2GRAY;
     } else {
@@ -1472,7 +1472,7 @@ std::shared_ptr<Frame> Tracking::CreateFrame(
     if (mSensor == System::STEREO || mSensor == System::IMU_STEREO) {
         cv::cvtColor(imRight, image_right, color_codes);
     }
-  } else if( mImGray.channels() == 4) {
+  } else if( imLeft.channels() == 4) {
     if (mbRGB) {
       color_codes = cv::COLOR_RGBA2GRAY;
     } else {
@@ -1506,25 +1506,25 @@ std::shared_ptr<Frame> Tracking::CreateFrame(
             mpORBextractorLeft, mpORBextractorRight,mpORBVocabulary,
             mK,mDistCoef,mbf,mThDepth,mpCamera,mpCamera2,mTlr,&mLastFrame,*mpImuCalib);
   } else if (mSensor == System::RGBD) {
-    frame = std::make_shared<Frame>(mImGray, imRight, timestamp,
+    frame = std::make_shared<Frame>(imLeft, imRight, timestamp,
             mpORBextractorLeft, mpORBVocabulary, mK, mDistCoef, mbf, mThDepth, mpCamera);
   } else if (mSensor == System::IMU_RGBD) {
-    frame = std::make_shared<Frame>(mImGray, imRight, timestamp, mpORBextractorLeft, mpORBVocabulary,
+    frame = std::make_shared<Frame>(imLeft, imRight, timestamp, mpORBextractorLeft, mpORBVocabulary,
             mK,mDistCoef, mbf, mThDepth, mpCamera, &mLastFrame, *mpImuCalib);
   } else if (mSensor == System::MONOCULAR) {
     if (mState == NOT_INITIALIZED || mState == NO_IMAGES_YET || (lastID - initID) < mMaxFrames) {
-      frame = std::make_shared<Frame>(mImGray, timestamp, mpIniORBextractor,
+      frame = std::make_shared<Frame>(imLeft, timestamp, mpIniORBextractor,
               mpORBVocabulary, mpCamera, mDistCoef, mbf, mThDepth);
     } else {
-      frame = std::make_shared<Frame>(mImGray, timestamp, mpORBextractorLeft,
+      frame = std::make_shared<Frame>(imLeft, timestamp, mpORBextractorLeft,
               mpORBVocabulary, mpCamera, mDistCoef, mbf, mThDepth);
     }
   } else if (mSensor == System::IMU_MONOCULAR) {
     if (mState == NOT_INITIALIZED || mState == NO_IMAGES_YET) {
-      frame = std::make_shared<Frame>(mImGray, timestamp, mpIniORBextractor,
+      frame = std::make_shared<Frame>(imLeft, timestamp, mpIniORBextractor,
               mpORBVocabulary, mpCamera,mDistCoef, mbf, mThDepth, &mLastFrame, *mpImuCalib);
     } else {
-      frame = std::make_shared<Frame>(mImGray, timestamp, mpORBextractorLeft,
+      frame = std::make_shared<Frame>(imLeft, timestamp, mpORBextractorLeft,
               mpORBVocabulary, mpCamera, mDistCoef, mbf, mThDepth, &mLastFrame, *mpImuCalib);
     }
   }
@@ -1675,6 +1675,8 @@ Sophus::SE3f Tracking::GrabImageRGBD(const cv::Mat &imRGB,const cv::Mat &imD, co
 
 Sophus::SE3f Tracking::GrabImageMonocular(Frame &frame) {
   mImGray = frame.imgLeft;
+  mCurrentFrame = frame;
+  mCurrentFrame.mnDataset = mnNumDataset;
   if (mState == NO_IMAGES_YET)
     t0 = frame.mTimeStamp;
 #ifdef REGISTER_TIMES

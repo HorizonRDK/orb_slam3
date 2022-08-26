@@ -294,10 +294,11 @@ void System::CreateFrameAndPush(const cv::Mat &imLeft, const cv::Mat &imRight,
     cv::resize(imLeft, imLeftToFeed, settings_->newImSize());
     cv::resize(imRight, imRightToFeed, settings_->newImSize());
   } else {
-    imLeftToFeed = imLeft.clone();
-    imRightToFeed = imRight.clone();
+    imLeftToFeed = imLeft;
+    imRightToFeed = imRight;
   }
   auto frame = mpTracker->CreateFrame(imLeftToFeed, imRightToFeed, timestamp, filename);
+
   auto frame_wrapper = std::make_shared<FrameWrapper>(frame, ImuMeas, PosePromise);
   {
     std::lock_guard<std::mutex> lck(mQueueMutex);
@@ -346,9 +347,9 @@ void System::CreateTrackFrameThread() {
         auto now_p = std::chrono::high_resolution_clock::now();
         auto dura = std::chrono::duration_cast<
                 std::chrono::milliseconds>(now_p - last_p).count();
-        if (dura >= 2000) {
+        if (dura >= 1000) {
           last_p = now_p;
-          printf("fps: %f, track cost: %f\n", fps / 2., sum / fps);
+          printf("fps: %f\n", fps * 1000.0f / dura);
           sum = 0.0f;
           fps = 0;
         }

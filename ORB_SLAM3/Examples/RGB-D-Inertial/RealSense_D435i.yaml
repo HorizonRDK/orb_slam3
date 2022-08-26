@@ -5,7 +5,7 @@
 #--------------------------------------------------------------------------------------------
 File.version: "1.0"
 
-Camera.type: "Rectified"
+Camera.type: "PinHole"
 
 # Right Camera calibration and distortion parameters (OpenCV)
 Camera1.fx: 617.201
