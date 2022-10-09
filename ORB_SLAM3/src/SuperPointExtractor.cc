@@ -599,7 +599,7 @@ void SuperPointOutputParser::ParameterInit(
         std::vector<std::shared_ptr<DNNTensor>> &tensors) {
   if (!is_parameter_init_) {
     int h_idx, w_idx, c_idx;
-    get_tensor_hwc_index(tensors[0], &h_idx, &w_idx, &c_idx);
+    hobot::dnn_node::output_parser::get_tensor_hwc_index(tensors[0], &h_idx, &w_idx, &c_idx);
     model_output_width_ =
             tensors[0]->properties.validShape.dimensionSize[w_idx];
     model_output_height_ =
@@ -613,7 +613,7 @@ void SuperPointOutputParser::ParameterInit(
               tensors[layer]->properties.tensorType;
       std::cout << "model output type: " << tensordatatype << std::endl;
       int h_idx, w_idx, c_idx;
-      get_tensor_hwc_index(tensors[layer], &h_idx, &w_idx, &c_idx);
+      hobot::dnn_node::output_parser::get_tensor_hwc_index(tensors[layer], &h_idx, &w_idx, &c_idx);
       std::cout << "model out hidx:" << h_idx << ", w_idx:" << w_idx
                 << ", c_idx:" << c_idx << std::endl;
       channel_size_.push_back(
