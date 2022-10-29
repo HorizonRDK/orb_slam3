@@ -72,9 +72,9 @@ get_filename_component(SECOND_FOLDER_ABSOLUTE ${PROJECT_SOURCE_DIR} DIRECTORY)
 include_directories(
 ${SECOND_FOLDER_ABSOLUTE}
 ${SECOND_FOLDER_ABSOLUTE}/include
-${orb_slam3_INCLUDE_DIRS}/orb_slam3/
-${orb_slam3_INCLUDE_DIRS}/orb_slam3/CameraModels
-${orb_slam3_INCLUDE_DIRS}/orb_slam3/Thirdparty/Sophus
+${CMAKE_INSTALL_PREFIX}/include/orb_slam3/
+${CMAKE_INSTALL_PREFIX}/include/orb_slam3/CameraModels/
+${CMAKE_INSTALL_PREFIX}/include/orb_slam3/Thirdparty/Sophus/
 ${EIGEN3_INCLUDE_DIR}
 ${OpenCV_INCLUDE_DIRS}
 
