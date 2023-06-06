@@ -85,5 +85,5 @@ make -j2
 
 #build_Examples_ROS2
 #clean_Thirdparty
-#uncompress_vocabulary
+uncompress_vocabulary
 
