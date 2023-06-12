@@ -59,7 +59,10 @@ uncompress_vocabulary() {
 for arg in "$@"
 do
   if [ $arg == "x3" ]; then
-    AARCH_CONFIG_FILE=`realpath ../../../../robot_dev_config/aarch64_toolchainfile.cmake`
+    export TARGET_ARCH=aarch64
+    export TARGET_TRIPLE=aarch64-linux-gnu
+    export CROSS_COMPILE=/usr/bin/$TARGET_TRIPLE-
+    AARCH_CONFIG_FILE=`realpath ../../../../../robot_dev_config/aarch64_toolchainfile.cmake`
     echo "aarch64_toolchainfile: ${AARCH_CONFIG_FILE}"
     TOOL_CHAIN_CMD=" -DCMAKE_TOOLCHAIN_FILE=${AARCH_CONFIG_FILE}"
     ENABLE_VIEWER=OFF
@@ -71,7 +74,7 @@ echo "compile toolchain: ${TOOL_CHAIN_CMD}"
 
 mkdir -p ./lib
 
-#build_Thirdparty
+build_Thirdparty
 
 echo "Configuring and building ORB_SLAM3 ..."
 cd ${FILE_PATH}
@@ -82,5 +85,5 @@ make -j2
 
 #build_Examples_ROS2
 #clean_Thirdparty
-#uncompress_vocabulary
+uncompress_vocabulary
 
