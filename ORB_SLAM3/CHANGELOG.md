@@ -1,4 +1,9 @@
 # Changelog for package orb_slam3
+
+tros_2.0.2 (2023-10-31)
+------------------
+1. 更新package.xml，解决arm平台打包失败问题。
+
 tros_2.0.2 (2023-10-31)
 ------------------
 1. 修改RealSenseD435i.yaml的配置
