@@ -13,7 +13,7 @@
   <depend>sensor_msgs</depend>
   <depend>nav_msgs</depend>
   <depend>rclcpp_components</depend>
-  <depend>console_bridge</depend>
+  <depend>libconsole-bridge-dev</depend>
   <depend>cv_bridge</depend>
   <depend>tf2</depend>
   <depend>tf2_ros</depend>
