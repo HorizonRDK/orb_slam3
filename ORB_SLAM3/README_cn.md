@@ -1,4 +1,4 @@
-English| [简体中文](./README_cn.md)
+[English](./README.md) | 简体中文
 
 # ORB-SLAM3
 
@@ -43,13 +43,16 @@ If you use ORB-SLAM3 in an academic work, please cite:
     @article{ORBSLAM3_TRO,
       title={{ORB-SLAM3}: An Accurate Open-Source Library for Visual, Visual-Inertial 
                and Multi-Map {SLAM}},
-      author={Campos, Carlos AND Elvira, Richard AND Gómez, Juan J. AND Montiel, 
-              José M. M. AND Tardós, Juan D.},
+      author={Campos, Carlos AND Elvira, Richard AND G\´omez, Juan J. AND Montiel, 
+              Jos\'e M. M. AND Tard\'os, Juan D.},
       journal={IEEE Transactions on Robotics}, 
       volume={37},
       number={6},
       pages={1874-1890},
-      year={2021}# 2. Prerequisites
+      year={2021}
+     }
+
+# 2. Prerequisites
 We have tested the library in **Ubuntu 16.04** and **18.04**, but it should be easy to compile in other platforms. A powerful computer (e.g. i7) will ensure real-time performance and provide more stable and accurate results.
 
 ## C++11 or C++0x Compiler
@@ -96,55 +99,59 @@ This will create **libORB_SLAM3.so**  at *lib* folder and the executables in *Ex
 
 # 4. Running ORB-SLAM3 with your camera
 
-Directory `Examples` contains several demo programs and calibration files to run ORB-SLAM3 in all sensor configurations with Intel Realsense cameras T265 and D435i. The steps needed to use your own camera are:1. 根据`Calibration_Tutorial.pdf`来校准您的相机，并编写您的校准文件`your_camera.yaml`
+Directory `Examples` contains several demo programs and calibration files to run ORB-SLAM3 in all sensor configurations with Intel Realsense cameras T265 and D435i. The steps needed to use your own camera are: 
 
-2. 修改其中一个提供的演示以适应您特定的相机型号，并构建它
+1. Calibrate your camera following `Calibration_Tutorial.pdf` and write your calibration file `your_camera.yaml`
 
-3. 使用USB3或适当的接口将相机连接到计算机
+2. Modify one of the provided demos to suit your specific camera model, and build it
 
-4. 运行ORB-SLAM3。例如，对于我们的D435i相机，我们将执行：
+3. Connect the camera to your computer using USB3 or the appropriate interface
+
+4. Run ORB-SLAM3. For example, for our D435i camera, we would execute:
 
 ```
 ./Examples/Stereo-Inertial/stereo_inertial_realsense_D435i Vocabulary/ORBvoc.txt ./Examples/Stereo-Inertial/RealSense_D435i.yaml
 ```
 
-# 5. EuRoC 示例
-[EuRoC数据集](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) 是使用两个针孔相机和一个惯性传感器录制的。我们提供一个示例脚本，用于在所有传感器配置下启动EuRoC序列。
+# 5. EuRoC Examples
+[EuRoC dataset](http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) was recorded with two pinhole cameras and an inertial sensor. We provide an example script to launch EuRoC sequences in all the sensor configurations.
 
-1. 从http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets下载序列（ASL格式）
+1. Download a sequence (ASL format) from http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets
 
-2. 在项目的根目录中打开脚本“euroc_examples.sh”。将**pathDatasetEuroc**变量更改为指向解压缩数据集的目录。
+2. Open the script "euroc_examples.sh" in the root of the project. Change **pathDatasetEuroc** variable to point to the directory where the dataset has been uncompressed. 
 
-3. 执行以下脚本以处理所有序列及所有传感器配置:
+3. Execute the following script to process all the sequences with all sensor configurations:
 ```
 ./euroc_examples
 ```
 
-## 评估
-EuRoC为每个序列提供了IMU本体参考下的地面真实值。由于纯视觉执行报告的轨迹以左侧摄像机为中心，我们在“evaluation”文件夹中提供了地面真实值到左侧相机参考的转换。视觉惯性轨迹使用数据集的地面真实值。
+## Evaluation
+EuRoC provides ground truth for each sequence in the IMU body reference. As pure visual executions report trajectories centered in the left camera, we provide in the "evaluation" folder the transformation of the ground truth to the left camera reference. Visual-inertial trajectories use the ground truth from the dataset.
 
-执行以下脚本以处理序列并计算均方根ATE：
+Execute the following script to process sequences and compute the RMS ATE:
 ```
 ./euroc_eval_examples
 ```
 
-# 6. TUM-VI 示例
-[TUM-VI数据集](https://vision.in.tum.de/data/datasets/visual-inertial-dataset) 是使用两个鱼眼摄像头和一个惯性传感器录制的。
+# 6. TUM-VI Examples
+[TUM-VI dataset](https://vision.in.tum.de/data/datasets/visual-inertial-dataset) was recorded with two fisheye cameras and an inertial sensor.
 
-1. 从https://vision.in.tum.de/data/datasets/visual-inertial-dataset下载序列并对其进行解压缩。
+1. Download a sequence from https://vision.in.tum.de/data/datasets/visual-inertial-dataset and uncompress it.
 
-2. 在项目的根目录中打开脚本“tum_vi_examples.sh”。将**pathDatasetTUM_VI**变量更改为指向解压缩数据集的目录。
+2. Open the script "tum_vi_examples.sh" in the root of the project. Change **pathDatasetTUM_VI** variable to point to the directory where the dataset has been uncompressed. 
 
-3. 执行以下脚本以处理所有序列及所有传感器配置:
+3. Execute the following script to process all the sequences with all sensor configurations:
 ```
 ./tum_vi_examples
 ```
 
-## 评估
-在TUM-VI中，地面真实值仅在所有序列开始和结束的房间内提供。因此，误差度量反映了序列末尾的漂移情况。
+## Evaluation
+In TUM-VI ground truth is only available in the room where all sequences start and end. As a result the error measures the drift at the end of the sequence. 
 
-执行以下脚本以处理序列并计算均方根ATE：
-``````
+Execute the following script to process sequences and compute the RMS ATE:
+```
+./tum_vi_eval_examples
+```
 
 # 7. ROS Examples
 
@@ -192,39 +199,39 @@ For a stereo input from topic `/camera/left/image_raw` and `/camera/right/image_
 ### Running Stereo-Inertial Node
 For a stereo input from topics `/camera/left/image_raw` and `/camera/right/image_raw`, and an inertial input from topic `/imu`, run node ORB_SLAM3/Stereo_Inertial. You will need to provide the vocabulary file and a settings file, including rectification matrices if required in a similar way to Stereo case:
 
-  ``````
-rosrun ORB_SLAM3 Stereo_Inertial PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE ONLINE_RECTIFICATION [EQUALIZATION]	
-
+  ```
+  rosrun ORB_SLAM3 Stereo_Inertial PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE ONLINE_RECTIFICATION [EQUALIZATION]	
+  ```
+  
 ### Running RGB_D Node
 For an RGB-D input from topics `/camera/rgb/image_raw` and `/camera/depth_registered/image_raw`, run node ORB_SLAM3/RGBD. You will need to provide the vocabulary file and a settings file. See the RGB-D example above.
 
-```
-rosrun ORB_SLAM3 RGBD PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
-```
+  ```
+  rosrun ORB_SLAM3 RGBD PATH_TO_VOCABULARY PATH_TO_SETTINGS_FILE
+  ```
 
 **Running ROS example:** Download a rosbag (e.g. V1_02_medium.bag) from the EuRoC dataset (http://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets). Open 3 tabs on the terminal and run the following command at each tab for a Stereo-Inertial configuration:
-```
-roscore
-```
-
-```
-rosrun ORB_SLAM3 Stereo_Inertial Vocabulary/ORBvoc.txt Examples/Stereo-Inertial/EuRoC.yaml true
-```
-
-```
-rosbag play --pause V1_02_medium.bag /cam0/image_raw:=/camera/left/image_raw /cam1/image_raw:=/camera/right/image_raw /imu0:=/imu
-```
-
+  ```
+  roscore
+  ```
+  
+  ```
+  rosrun ORB_SLAM3 Stereo_Inertial Vocabulary/ORBvoc.txt Examples/Stereo-Inertial/EuRoC.yaml true
+  ```
+  
+  ```
+  rosbag play --pause V1_02_medium.bag /cam0/image_raw:=/camera/left/image_raw /cam1/image_raw:=/camera/right/image_raw /imu0:=/imu
+  ```
+  
 Once ORB-SLAM3 has loaded the vocabulary, press space in the rosbag tab.
 
 **Remark:** For rosbags from TUM-VI dataset, some play issue may appear due to chunk size. One possible solution is to rebag them with the default chunk size, for example:
-```
-rosrun rosbag fastrebag.py dataset-room1_512_16.bag dataset-room1_512_16_small_chunks.bag
-```
+  ```
+  rosrun rosbag fastrebag.py dataset-room1_512_16.bag dataset-room1_512_16_small_chunks.bag
+  ```
 
 # 8. Running time analysis
 A flag in `include\Config.h` activates time measurements. It is necessary to uncomment the line `#define REGISTER_TIMES` to obtain the time stats of one execution which is shown at the terminal and stored in a text file(`ExecTimeMean.txt`).
 
 # 9. Calibration
-You can find a tutorial for visual-inertial calibration and a detailed description of the contents of valid configuration files at `Calibration_Tutorial.pdf`
-```
+You can find a tutorial for visual-inertial calibration and a detailed description of the contents of valid configuration files at  `Calibration_Tutorial.pdf`
