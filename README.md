@@ -49,12 +49,13 @@ sudo bash -c 'echo performance > /sys/devices/system/cpu/cpufreq/policy0/scaling
 cd /opt/tros/share/orb_slam3
 # Unzip the dataset, V2_01_easy.zip dataset needs to be downloaded separately!
 unzip V2_01_easy.zip -d V2_01_easy
-```# Unzip the bag of words library
+# Unzip the bag of words library
 tar -xvf ./Vocabulary/ORBvoc.txt.tar.gz
 # Grant executable permissions to the program
 sudo chmod +x ./Examples/Monocular/mono_euroc 
 # Run the program, where the V2_01_easy directory is the EuRoC open source dataset directory downloaded from the internet, developers need to download it themselves!
 ./Examples/Monocular/mono_euroc ./ORBvoc_refine.txt ./Examples/Monocular/EuRoC.yaml ./V2_01_easy/ ./Examples/Monocular/EuRoC_TimeStamps/V201.txt
+```
 
 After running the program, it will take some time to load the bag of words library. Wait a moment, and the program will print the current frame rate.
 ![](./_static/_images/visual_slam/euroc_result.png)
