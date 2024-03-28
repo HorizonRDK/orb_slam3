@@ -128,9 +128,17 @@ int SuperPointextractor::operator()(
         auto dnn_output = std::make_shared<SuperPointOutput>();
         PredictByImage(image_model_input, dnn_output);
         dnn_output->predict_promise_.get_future().get();
-        const std::vector<std::shared_ptr<DNNResult>> &outputs = dnn_output->outputs;
-        auto *extractor_result =
-                dynamic_cast<SuperPointResult *>(outputs[0].get());
+
+        // const std::vector<std::shared_ptr<DNNResult>> &outputs = dnn_output->outputs;
+
+        std::shared_ptr<SuperPointOutputParser> out_parser = std::make_shared<SuperPointOutputParser>(std::string());
+        std::shared_ptr<SuperPointResult> extractor_result = std::make_shared<SuperPointResult>();
+      
+        out_parser->Parse(extractor_result, dnn_output->output_tensors[0]);
+
+        // auto *extractor_result =
+        //         dynamic_cast<SuperPointResult *>(outputs[0].get());
+
         if (dnn_output->width_ratio_ != 1.0f
             || dnn_output->hight_ratio_ != 1.0f) {
           for (auto &kp : extractor_result->keypoints_) {
@@ -313,52 +321,51 @@ int SuperPointNode::SetNodePara() {
 
 int SuperPointNode::PostProcess(
         const std::shared_ptr<DnnNodeOutput> &node_output) {
+
   auto superpoint_output =
           std::dynamic_pointer_cast<SuperPointOutput>(node_output);
+ 
   auto &promise = superpoint_output->predict_promise_;
   promise.set_value(true);
   return 0;
 }
 
-int SuperPointNode::SetOutputParser() {
-  auto model_manage = GetModel();
-  if (!model_manage || !dnn_node_para_ptr_) {
-    RCLCPP_ERROR(rclcpp::get_logger("SuperPointextractor"),
-                 "Invalid model, Please use Start() first");
-    return -1;
-  }
-  for (int i = 0; i < output_index_; ++i) {
-    std::shared_ptr<OutputParser> assist_parser =
-            std::make_shared<SuperPointAssistParser>();
-    model_manage->SetOutputParser(i, assist_parser);
-  }
+// int SuperPointNode::SetOutputParser() {
+//   auto model_manage = GetModel();
+//   if (!model_manage || !dnn_node_para_ptr_) {
+//     RCLCPP_ERROR(rclcpp::get_logger("SuperPointextractor"),
+//                  "Invalid model, Please use Start() first");
+//     return -1;
+//   }
+//   for (int i = 0; i < output_index_; ++i) {
+//     std::shared_ptr<OutputParser> assist_parser =
+//             std::make_shared<SuperPointAssistParser>();
+//     model_manage->SetOutputParser(i, assist_parser);
+//   }
 
-  auto output_desc = std::make_shared<OutputDescription>(
-          model_manage, output_index_, "SuperPoint_branch");
-  for (int i = 0; i < output_index_; ++i) {
-    output_desc->GetDependencies().push_back(i);
-  }
+//   auto output_desc = std::make_shared<OutputDescription>(
+//           model_manage, output_index_, "SuperPoint_branch");
+//   for (int i = 0; i < output_index_; ++i) {
+//     output_desc->GetDependencies().push_back(i);
+//   }
 
-  output_desc->SetType("SuperPoint");
-  model_manage->SetOutputDescription(output_desc);
-  std::shared_ptr<OutputParser> out_parser =
-          std::make_shared<SuperPointOutputParser>(std::string());
-  model_manage->SetOutputParser(output_index_, out_parser);
-  return 0;
-}
+//   output_desc->SetType("SuperPoint");
+//   model_manage->SetOutputDescription(output_desc);
+//   std::shared_ptr<OutputParser> out_parser =
+//           std::make_shared<SuperPointOutputParser>(std::string());
+//   model_manage->SetOutputParser(output_index_, out_parser);
+//   return 0;
+// }
 
 int SuperPointNode::Predict(
         std::vector<std::shared_ptr<DNNTensor>> &inputs,
         std::shared_ptr<DnnNodeOutput> dnn_output) {
-  std::vector<std::shared_ptr<OutputDescription>> output_descs;
-  int ret = Run(inputs, output_descs, dnn_output, is_sync_mode_);
+  int ret = Run(inputs, dnn_output, is_sync_mode_);
   return ret;
 }
 
 int32_t SuperPointOutputParser::Parse(
         std::shared_ptr<SuperPointResult>& output,
-        std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
-        std::shared_ptr<OutputDescription>& output_description,
         std::shared_ptr<DNNTensor>& output_tensor) {
   std::shared_ptr<SuperPointResult> result;
   if (!output) {
@@ -377,32 +384,6 @@ int32_t SuperPointOutputParser::Parse(
   }
   return ret;
 }
-
-//int32_t SuperPointOutputParser::Parse(
-//        std::shared_ptr<DNNResult> &output,
-//        std::vector<std::shared_ptr<InputDescription>> &input_descriptions,
-//        std::shared_ptr<OutputDescription> &output_descriptions,
-//        std::shared_ptr<DNNTensor> &output_tensor,
-//        std::vector<std::shared_ptr<OutputDescription>> &depend_output_descs,
-//        std::vector<std::shared_ptr<DNNTensor>> &depend_output_tensors,
-//        std::vector<std::shared_ptr<DNNResult>> &depend_outputs) {
-//  std::shared_ptr<SuperPointResult> result;
-//  if (!output) {
-//    result = std::make_shared<SuperPointResult>();
-//    result->Reset();
-//    output = result;
-//  } else {
-//    result = std::dynamic_pointer_cast<SuperPointResult>(output);
-//    result->Reset();
-//  }
-//
-//  int ret = PostProcess(depend_output_tensors, result->keypoints_, result->descriptors_);
-//  if (ret != 0) {
-//    RCLCPP_INFO(rclcpp::get_logger("SuperPointExtractor"),
-//                "postprocess return error, code = %d", ret);
-//  }
-//  return ret;
-//}
 
 void NmsFast(std::vector<cv::KeyPoint>& kps, std::vector<cv::KeyPoint> &kps_nms,
         int dist_thresh, int img_width, int img_height) {

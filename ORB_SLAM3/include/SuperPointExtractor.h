@@ -8,10 +8,6 @@
 #include "dnn_node/dnn_node_data.h"
 
 #include "dnn/hb_dnn_ext.h"
-#include "easy_dnn/data_structure.h"
-#include "easy_dnn/description.h"
-#include "easy_dnn/model.h"
-#include "easy_dnn/output_parser.h"
 
 #include <opencv2/imgcodecs.hpp>
 #include <arm_neon.h>
@@ -30,16 +26,9 @@ using hobot::dnn_node::DnnNodePara;
 using hobot::dnn_node::ModelTaskType;
 using hobot::dnn_node::TaskId;
 
-using hobot::easy_dnn::DNNTensor;
+using hobot::dnn_node::DNNTensor;
 using hobot::dnn_node::DNNInput;
-using hobot::dnn_node::DNNResult;
 using hobot::dnn_node::NV12PyramidInput;
-
-using hobot::easy_dnn::OutputDescription;
-using hobot::easy_dnn::InputDescription;
-using hobot::easy_dnn::OutputParser;
-using hobot::easy_dnn::SingleBranchOutputParser;
-using hobot::easy_dnn::MultiBranchOutputParser;
 
 namespace ORB_SLAM3
 {
@@ -179,7 +168,7 @@ struct SuperPointNode : public DnnNode {
 
 protected:
   int SetNodePara() override;
-  int SetOutputParser() override;
+  int SetOutputParser();
   int PostProcess(const std::shared_ptr<DnnNodeOutput> &outputs) override;
 
 private:
@@ -201,9 +190,9 @@ private:
   friend class SuperPointextractor;
 };
 
-struct SuperPointResult : public DNNResult {
+struct SuperPointResult {
 public:
-  void Reset() override {
+  void Reset() {
     keypoints_.clear();
   }
 
@@ -211,31 +200,21 @@ public:
   std::vector<cv::KeyPoint> keypoints_;
 };
 
-struct SuperPointAssistParser : public SingleBranchOutputParser<SuperPointResult> {
-  int32_t Parse(
-          std::shared_ptr<SuperPointResult>& output,
-          std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
-          std::shared_ptr<OutputDescription>& output_description,
-          std::shared_ptr<DNNTensor>& output_tensor) { return -1; }
-};
+// struct SuperPointAssistParser : public SingleBranchOutputParser<SuperPointResult> {
+//   int32_t Parse(
+//           std::shared_ptr<SuperPointResult>& output,
+//           std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
+//           std::shared_ptr<OutputDescription>& output_description,
+//           std::shared_ptr<DNNTensor>& output_tensor) { return -1; }
+// };
 
-struct SuperPointOutputParser : public SingleBranchOutputParser<SuperPointResult> {
+struct SuperPointOutputParser {
 public:
   SuperPointOutputParser(const std::string &config_file) {
     //  yaml_file_ = config_file + "/centernet.yaml";
   }
-//  int32_t Parse(
-//          std::shared_ptr<DNNResult> &output,
-//          std::vector<std::shared_ptr<InputDescription>> &input_descriptions,
-//          std::shared_ptr<OutputDescription> &output_descriptions,
-//          std::shared_ptr<DNNTensor> &output_tensor,
-//          std::vector<std::shared_ptr<OutputDescription>> &depend_output_descs,
-//          std::vector<std::shared_ptr<DNNTensor>> &depend_output_tensors,
-//          std::vector<std::shared_ptr<DNNResult>> &depend_outputs) override;
   int32_t Parse(
           std::shared_ptr<SuperPointResult>& output,
-          std::vector<std::shared_ptr<InputDescription>>& input_descriptions,
-          std::shared_ptr<OutputDescription>& output_description,
           std::shared_ptr<DNNTensor>& output_tensor);
 
 private:
